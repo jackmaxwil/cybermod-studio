@@ -65,6 +65,9 @@ let package = Package(
             path: "Sources/CyberModCore",
             resources: [
                 .copy("Schemas/Resources")
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"])
             ]
         ),
         
@@ -93,7 +96,10 @@ let package = Package(
         .testTarget(
             name: "CyberModCoreTests",
             dependencies: ["CyberModCore"],
-            path: "Tests/CyberModCoreTests"
+            path: "Tests/CyberModCoreTests",
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"])
+            ]
         ),
     ]
 )

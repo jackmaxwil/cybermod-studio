@@ -83,19 +83,7 @@ struct DetailView: View {
     }
 }
 
-// MARK: - Placeholder Views
-
-struct ModManagerView: View {
-    var body: some View {
-        VStack {
-            Text("Mod Manager")
-                .font(.largeTitle)
-            Text("Install, manage, and organize your mods")
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
+// ModManagerView is now in its own file
 
 struct GameRunnerView: View {
     var body: some View {
@@ -158,43 +146,77 @@ struct DebugStudioView: View {
 
 struct InstallModSheet: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
+    @State private var selectedFile: URL?
+    @State private var showFomodWizard = false
+    @State private var fomodSessionId: UUID?
+    @State private var isInstalling = false
     
     var body: some View {
         VStack(spacing: 20) {
             Text("Install Mod")
                 .font(.title)
             
-            Text("Drop a mod archive here or click Browse")
-                .foregroundColor(.secondary)
-            
-            HStack {
-                Button("Cancel") { dismiss() }
-                Button("Browse...") { }
+            if isInstalling {
+                ProgressView("Installing mod...")
+            } else {
+                Text("Drop a mod archive here or click Browse")
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Button("Cancel") { dismiss() }
+                    Button("Browse...") {
+                        let panel = NSOpenPanel()
+                        panel.allowedContentTypes = [.zip, .archive]
+                        panel.canChooseFiles = true
+                        panel.canChooseDirectories = false
+                        
+                        if panel.runModal() == .OK, let url = panel.url {
+                            selectedFile = url
+                            Task {
+                                await installMod(from: url)
+                            }
+                        }
+                    }
                     .buttonStyle(.borderedProminent)
+                }
             }
         }
         .padding(40)
         .frame(width: 500, height: 300)
+        .sheet(isPresented: $showFomodWizard) {
+            if let sessionId = fomodSessionId {
+                FomodInstallerSheet(sessionId: sessionId)
+            }
+        }
+    }
+    
+    private func installMod(from url: URL) async {
+        isInstalling = true
+        defer { isInstalling = false }
+        
+        do {
+            let source = ModSource.local(url: url)
+            let result = try await appState.modManager.install(source)
+            
+            // Check if FOMOD wizard is needed
+            // This would be detected during installation
+            // For now, just dismiss
+            dismiss()
+        } catch ModManagerError.fomodRequired(let config) {
+            // Create FOMOD session and show wizard
+            // This is a simplified version - in reality, we'd need to create the session
+            // with the extracted mod directory
+            // showFomodWizard = true
+            dismiss()
+        } catch {
+            print("Installation failed: \(error)")
+            dismiss()
+        }
     }
 }
 
-struct NexusBrowserSheet: View {
-    @Environment(\.dismiss) var dismiss
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Browse Nexus Mods")
-                .font(.title)
-            
-            Text("Search and download mods from Nexus Mods")
-                .foregroundColor(.secondary)
-            
-            Button("Close") { dismiss() }
-        }
-        .padding(40)
-        .frame(width: 800, height: 600)
-    }
-}
+// NexusBrowserSheet is now in its own file
 
 struct NewProjectSheet: View {
     @Environment(\.dismiss) var dismiss

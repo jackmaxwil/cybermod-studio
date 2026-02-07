@@ -115,17 +115,46 @@ public actor ModFileManager {
         var version: String?
         var author: String?
         
-        // Check for FOMOD
-        let fomodPath = directory.appendingPathComponent("fomod/ModuleConfig.xml")
+        // Check for FOMOD and parse if present
+        let fomodPath = directory.appendingPathComponent("fomod")
         if fm.fileExists(atPath: fomodPath.path) {
-            hasFomod = true
-            // TODO: Parse FOMOD config
-        }
-        
-        // Check for info.xml
-        let infoPath = directory.appendingPathComponent("fomod/info.xml")
-        if fm.fileExists(atPath: infoPath.path) {
-            // TODO: Parse mod info
+            let moduleConfigPath = fomodPath.appendingPathComponent("ModuleConfig.xml")
+            // Try case-insensitive search
+            var actualConfigPath = moduleConfigPath
+            if !fm.fileExists(atPath: moduleConfigPath.path) {
+                if let contents = try? fm.contentsOfDirectory(at: fomodPath, includingPropertiesForKeys: nil) {
+                    for file in contents {
+                        if file.lastPathComponent.lowercased() == "moduleconfig.xml" {
+                            actualConfigPath = file
+                            break
+                        }
+                    }
+                }
+            }
+            
+            if fm.fileExists(atPath: actualConfigPath.path) {
+                hasFomod = true
+                
+                // Parse FOMOD config
+                do {
+                    let parser = FomodParser(logger: logger)
+                    let extendedConfig = try parser.parse(fomodDir: directory)
+                    fomodConfig = extendedConfig.toFomodConfig()
+                    
+                    // Extract mod info from FOMOD
+                    if modName == nil {
+                        modName = extendedConfig.info.name
+                    }
+                    if version == nil {
+                        version = extendedConfig.info.version
+                    }
+                    if author == nil {
+                        author = extendedConfig.info.author
+                    }
+                } catch {
+                    logger.warning("Failed to parse FOMOD config: \(error.localizedDescription)")
+                }
+            }
         }
         
         // Enumerate all files
@@ -243,8 +272,6 @@ public actor ModFileManager {
     
     private func determineInstallPath(file: AnalyzedFile, installDir: URL) -> URL {
         // If file is already in a proper structure, preserve it
-        let components = file.relativePath.components(separatedBy: "/")
-        
         // Find the relevant part of the path (after archive/pc/mod, r6/tweaks, etc.)
         // For now, just use the filename
         let filename = file.absolutePath.lastPathComponent

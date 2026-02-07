@@ -11,6 +11,8 @@ public actor ModManager {
     private let database: ModDatabase
     private let fileManager: ModFileManager
     private let compatibilityChecker: CompatibilityChecker
+    private let dependencyResolver: DependencyResolver
+    private let conflictDetector: ConflictDetector
     private let logger: Logger
     
     // MARK: - State
@@ -26,11 +28,15 @@ public actor ModManager {
     public init(
         database: ModDatabase? = nil,
         fileManager: ModFileManager? = nil,
-        compatibilityChecker: CompatibilityChecker? = nil
+        compatibilityChecker: CompatibilityChecker? = nil,
+        dependencyResolver: DependencyResolver? = nil,
+        conflictDetector: ConflictDetector? = nil
     ) {
         self.database = database ?? ModDatabase.shared
         self.fileManager = fileManager ?? ModFileManager.shared
         self.compatibilityChecker = compatibilityChecker ?? CompatibilityChecker()
+        self.dependencyResolver = dependencyResolver ?? DependencyResolver()
+        self.conflictDetector = conflictDetector ?? ConflictDetector()
         self.logger = Logger(label: "com.cybermod.modmanager")
     }
     
@@ -80,6 +86,31 @@ public actor ModManager {
             throw ModManagerError.incompatible(reasons: compatibility.issues)
         }
         
+        // Step 3.5: Check dependencies
+        let modToInstall = Mod(
+            name: analysis.modName ?? stagingDir.lastPathComponent,
+            version: analysis.version ?? "1.0.0",
+            author: analysis.author,
+            type: analysis.detectedTypes,
+            stagingPath: stagingDir
+        )
+        let installedMods = try await database.listMods()
+        let dependencyResult = await dependencyResolver.resolve(for: modToInstall, installedMods: installedMods)
+        
+        if dependencyResult.hasIssues && !options.forceInstall {
+            var reasons: [String] = []
+            if !dependencyResult.missing.isEmpty {
+                let missingNames = dependencyResult.missing.map { $0.name }.joined(separator: ", ")
+                reasons.append("Missing required dependencies: \(missingNames)")
+            }
+            if !dependencyResult.versionMismatch.isEmpty {
+                for (dep, installed, required) in dependencyResult.versionMismatch {
+                    reasons.append("\(dep.name): installed \(installed), required \(required)")
+                }
+            }
+            throw ModManagerError.dependencyMissing(name: reasons.joined(separator: "; "))
+        }
+        
         // Step 4: Handle FOMOD if present
         var filesToDeploy = analysis.files
         if analysis.hasFomod {
@@ -93,7 +124,19 @@ public actor ModManager {
             )
         }
         
-        // Step 5: Deploy files
+        // Step 5: Check for conflicts before deploying
+        let conflictReport = await conflictDetector.detectForNewMod(
+            newMod: modToInstall,
+            existingMods: installedMods.filter { $0.isEnabled },
+            deploymentPlan: [] // Will be populated after deployment
+        )
+        
+        if conflictReport.hasBlockingConflicts && !options.forceInstall {
+            let conflictFiles = conflictReport.conflicts.prefix(5).map { $0.filePath }.joined(separator: ", ")
+            throw ModManagerError.installationFailed(reason: "Blocking conflicts detected: \(conflictFiles)")
+        }
+        
+        // Step 6: Deploy files
         let deployedFiles = try await fileManager.deploy(
             files: filesToDeploy,
             from: stagingDir,
@@ -101,7 +144,7 @@ public actor ModManager {
         )
         logger.info("Deployed \(deployedFiles.count) files")
         
-        // Step 6: Record in database
+        // Step 7: Record in database
         let mod = Mod(
             name: analysis.modName ?? stagingDir.lastPathComponent,
             version: analysis.version ?? "1.0.0",
@@ -247,8 +290,66 @@ public actor ModManager {
         config: FomodConfig,
         choices: [FomodChoice]
     ) async throws -> [AnalyzedFile] {
-        // TODO: Implement FOMOD resolution
-        return []
+        // Re-parse FOMOD config to get extended version
+        let parser = FomodParser(logger: logger)
+        let extendedConfig = try parser.parse(fomodDir: stagingDir)
+        
+        // Resolve files based on choices
+        let resolvedFiles = try parser.resolveFiles(
+            config: extendedConfig,
+            choices: choices,
+            baseDir: stagingDir
+        )
+        
+        // Convert to AnalyzedFile format
+        var analyzedFiles: [AnalyzedFile] = []
+        let fm = FileManager.default
+        
+        for (source, destination) in resolvedFiles {
+            guard let resourceValues = try? source.resourceValues(forKeys: [.isRegularFileKey]),
+                  resourceValues.isRegularFile == true else {
+                continue
+            }
+            
+            let ext = source.pathExtension.lowercased()
+            let relativePath = source.path.replacingOccurrences(of: stagingDir.path + "/", with: "")
+            
+            let fileType = detectModType(extension: ext, path: relativePath)
+            let size = (try? fm.attributesOfItem(atPath: source.path)[.size] as? Int) ?? 0
+            
+            analyzedFiles.append(AnalyzedFile(
+                relativePath: destination.isEmpty ? relativePath : destination,
+                absolutePath: source,
+                fileType: fileType,
+                size: size
+            ))
+        }
+        
+        return analyzedFiles
+    }
+    
+    private func detectModType(extension ext: String, path: String) -> ModType {
+        for type in ModType.allCases {
+            if type.fileExtensions.contains(ext) {
+                if ext == "dll" {
+                    return .red4ext // Will be flagged as incompatible later
+                }
+                return type
+            }
+        }
+        
+        // Check by path patterns
+        if path.contains("r6/tweaks") || path.contains("r6\\tweaks") {
+            return .tweakXL
+        }
+        if path.contains("r6/scripts") || path.contains("r6\\scripts") {
+            return .redscript
+        }
+        if path.contains("red4ext/plugins") || path.contains("red4ext\\plugins") {
+            return .red4ext
+        }
+        
+        return .unknown
     }
 }
 
