@@ -1,88 +1,70 @@
-# CyberMod Studio - Project Status
+# CyberMod Studio — Status
 
-## Current Phase: Foundation (Phase 1)
+> **Last updated:** 2026-02-21
+> **Phase:** 1 (Mod Manager + Game Runner)
+> **Platform:** macOS 14+ (Apple Silicon)
 
-### Completed
+## What's complete
 
-- [x] Repository structure created
-- [x] Swift Package manifest (Package.swift)
-- [x] Core documentation (PRD, DESIGN, VIEWS, ARCHITECTURE)
-- [x] IPC Protocol specification
-- [x] TweakDB/ArchiveXL schema documentation
-- [x] CyberModCore module structure
-- [x] Basic ModEngine implementation (Mod, ModManager, ModProfile, ModFileManager)
-- [x] CompatibilityChecker for macOS mod validation
-- [x] ModDatabase with GRDB/SQLite
-- [x] GameLauncher for game process management
-- [x] CLI scaffolding with ArgumentParser
-- [x] SwiftUI app shell with navigation
+### Infrastructure
+- [x] `CyberModCore` SPM package builds (all dependencies resolved)
+- [x] `CyberModCLI` implements `list`, `install`, `uninstall`, `enable`, `disable`, `profile`, `launch`
+- [x] `CyberModDaemon` skeleton (XPC not yet connected)
+- [x] `CyberModStudio.xcodeproj` generated via xcodegen, depends on CyberModCore
+- [x] SQLite database (GRDB) with migrations for mods, profiles, deployed files
 
-### In Progress
+### Mod Manager (Phase 4.1)
+- [x] `ModManager` actor with install/uninstall/enable/disable
+- [x] `InstallModSheet` — file picker, FOMOD detection, staged install
+- [x] `NexusBrowserSheet` — search, trending, file picker, download + auto-install
+- [x] `ModManagerView` — mod list with search, enable/disable toggle, context menus
+- [x] `ModDetailView` — metadata, mod types, dependencies, actions
+- [x] Load order persistence via `profile_mods.load_order` in database
+- [x] `CompatibilityChecker` — detects DLL-only mods, framework requirements
+- [x] `DependencyResolver` — checks missing/version-mismatched deps
+- [x] `ConflictDetector` — file-level conflict detection pre-install
+- [x] `FomodParser` — parse ModuleConfig.xml and resolve file choices
+- [x] `FomodInstallerSheet` — step-through wizard for FOMOD options
 
-- [ ] Complete ModManager implementation
-- [ ] FOMOD parser integration
-- [ ] Nexus API client
-- [ ] Full SwiftUI views for Mod Manager module
+### Game Runner (Phase 4.2)
+- [x] `GameLauncher` actor with DYLD_INSERT_LIBRARIES injection
+- [x] `GameRunnerView` — launch button, status, uptime, PID display
+- [x] `AppState.toggleGame()` fixed — calls `configure(gamePath:)` before launch
+- [x] Real-time uptime timer
+- [x] Game path configuration (browse picker)
+- [x] Framework status display (RED4ext, Frida, TweakXL, ArchiveXL, ModMenu)
+- [x] Log viewer — reads latest RED4ext log, color-coded by level
+- [x] Process monitoring via `ProcessMonitor` actor
+- [x] Error display in UI
 
-### Not Started
+## Not yet started (Phase 2+)
 
-- [ ] CyberModDaemon (privileged helper)
-- [ ] DebugAgent for in-game IPC
-- [ ] ProjectEngine for mod creation
-- [ ] PortingEngine for Windows→macOS
-- [ ] DebugEngine for runtime inspection
-- [ ] Complete unit test coverage
+- [ ] Daemon (XPC for privileged operations)
+- [ ] Debug Studio (in-game IPC)
+- [ ] Creation Studio (mod project editor)
+- [ ] Porting Studio (Windows→macOS guidance)
 
-## Quick Validation
+## Build
 
 ```bash
-# Build the package
-cd /Users/jackmazac/Development/cybermod-studio
-swift build
+# SPM packages
+swift build --target CyberModCore
 
-# Run tests
-swift test
-
-# Run CLI
-swift run cybermod --help
+# Open Xcode project
+open CyberModStudio.xcodeproj
 ```
 
-## Next Steps
+## Key files
 
-1. Complete ModFileManager with full FOMOD support
-2. Implement NexusAPIClient for mod browsing/downloading
-3. Build out ModManagerView with full CRUD operations
-4. Create GameRunnerView with launch monitoring
-5. Set up CyberModDaemon XPC service
-
-## Architecture Decisions
-
-| Decision | Status | Notes |
-|----------|--------|-------|
-| Swift Package for core logic | ✅ Implemented | CyberModCore |
-| GRDB for database | ✅ Implemented | Actor-based ModDatabase |
-| SwiftUI for UI | ✅ Scaffolded | Basic navigation working |
-| XPC for daemon | 📋 Planned | Phase 2 |
-| Frida for hooks | 📋 Planned | Reuse from RED4ext |
-
-## Dependencies Status
-
-| Dependency | Version | Status |
-|------------|---------|--------|
-| swift-argument-parser | 1.3.0+ | ✅ |
-| swift-log | 1.5.0+ | ✅ |
-| Yams | 5.1.0+ | ✅ |
-| GRDB.swift | 6.24.0+ | ✅ |
-| ZIPFoundation | 0.9.18+ | ✅ |
-| AsyncHTTPClient | 1.19.0+ | ✅ |
-| JSONSchema.swift | 0.6.0+ | ✅ |
-| TOMLKit | 0.5.0+ | ✅ |
-| swift-crypto | 3.2.0+ | ✅ |
-| swift-collections | 1.0.0+ | ✅ |
-
-## Known Issues
-
-1. FOMOD XML parsing not yet implemented
-2. Nexus API authentication not integrated
-3. SwiftUI views are placeholder implementations
-4. No daemon/helper for privileged operations yet
+| Area | File |
+|------|------|
+| App entry | `CyberModStudio/CyberModStudioApp.swift` |
+| Navigation | `CyberModStudio/Views/ContentView.swift` |
+| Mod list | `CyberModStudio/Views/ModManagerView.swift` |
+| Nexus browser | `CyberModStudio/Views/NexusBrowserSheet.swift` |
+| FOMOD wizard | `CyberModStudio/Views/FomodInstallerSheet.swift` |
+| Mod engine | `Sources/CyberModCore/ModEngine/ModManager.swift` |
+| Game launcher | `Sources/CyberModCore/GameBridge/GameLauncher.swift` |
+| Database | `Sources/CyberModCore/Database/ModDatabase.swift` |
+| Nexus API | `Sources/CyberModCore/NexusMods/NexusAPIClient.swift` |
+| Xcode project | `project.yml` (xcodegen spec) |

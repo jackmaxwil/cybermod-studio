@@ -100,19 +100,45 @@ class AppState: ObservableObject {
         // Refresh mod list
     }
     
+    @Published var lastError: String?
+    @Published var gameUptime: TimeInterval = 0
+    
+    private var uptimeTimer: Timer?
+    
     func toggleGame() async {
         if isGameRunning {
             try? await gameLauncher.terminate()
             isGameRunning = false
             activeSession = nil
+            uptimeTimer?.invalidate()
+            uptimeTimer = nil
+            gameUptime = 0
         } else {
+            lastError = nil
             do {
                 let profile = try await modManager.getActiveProfile()
+                await gameLauncher.configure(gamePath: profile.gamePath)
                 let session = try await gameLauncher.launch(profile: profile)
                 activeSession = session
                 isGameRunning = true
+                startUptimeTimer()
             } catch {
-                // Handle error
+                lastError = error.localizedDescription
+            }
+        }
+    }
+    
+    private func startUptimeTimer() {
+        uptimeTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                if let session = self.activeSession {
+                    self.gameUptime = session.uptime
+                    if !session.isRunning {
+                        self.isGameRunning = false
+                        self.uptimeTimer?.invalidate()
+                    }
+                }
             }
         }
     }

@@ -298,6 +298,18 @@ public actor ModDatabase {
         }
     }
     
+    /// Update load order for a mod in a profile
+    public func updateLoadOrder(modId: UUID, profileId: UUID, order: Int) async throws {
+        guard let db = dbQueue else { throw DatabaseError.notInitialized }
+        
+        try await db.write { db in
+            try db.execute(
+                sql: "UPDATE profile_mods SET load_order = ? WHERE profile_id = ? AND mod_id = ?",
+                arguments: [order, profileId.uuidString, modId.uuidString]
+            )
+        }
+    }
+    
     // MARK: - Deployed Files
     
     /// Get deployed files for a mod

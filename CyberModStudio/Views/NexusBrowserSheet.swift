@@ -319,11 +319,17 @@ class NexusBrowserViewModel: ObservableObject {
             
             downloadProgress[mod.id] = nil
             
-            // TODO: Trigger mod installation flow
-            print("Downloaded to: \(destination.path)")
+            // Trigger mod installation
+            let modManager = ModManager.shared
+            do {
+                let source = ModSource.local(url: destination)
+                let _ = try await modManager.install(source)
+            } catch {
+                // Installation may fail if no active profile etc.
+                // The file is still saved, user can install from ModManagerView
+            }
             
         } catch {
-            print("Download failed: \(error)")
             downloadProgress[mod.id] = nil
         }
     }

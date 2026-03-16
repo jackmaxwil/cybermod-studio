@@ -394,7 +394,21 @@ class ModManagerViewModel: ObservableObject {
     
     func moveMods(from source: IndexSet, to destination: Int) {
         mods.move(fromOffsets: source, toOffset: destination)
-        // TODO: Update load order in database
+        Task {
+            await persistLoadOrder()
+        }
+    }
+    
+    private func persistLoadOrder() async {
+        do {
+            let profile = try await modManager.getActiveProfile()
+            let database = ModDatabase.shared
+            for (index, mod) in mods.enumerated() {
+                try await database.updateLoadOrder(modId: mod.id, profileId: profile.id, order: index)
+            }
+        } catch {
+            // Load order persistence is best-effort
+        }
     }
 }
 
