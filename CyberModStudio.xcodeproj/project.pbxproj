@@ -1,0 +1,363 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		19E93CD98F9F9881AF0F55A9 /* FomodInstallerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */; };
+		79CAB2E0150BDAEA2A947A9A /* CyberModStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */; };
+		84F819C96B9CEAAFC0825021 /* CyberModCore in Frameworks */ = {isa = PBXBuildFile; productRef = FB86EA128FD16F58D902FFB6 /* CyberModCore */; };
+		896A5709CC591D1B752B7196 /* ModManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8A906B2982213D37AABCA7 /* ModManagerView.swift */; };
+		9D1298254132A3BDFDE7D7BF /* NexusBrowserSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */; };
+		C285C564847E0D0BEAEAC3B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B89BAC03DF6ED9728F4158 /* ContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FomodInstallerSheet.swift; sourceTree = "<group>"; };
+		7A398BA895F7A19FFF1EC2A2 /* cybermod-studio */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "cybermod-studio"; path = .; sourceTree = SOURCE_ROOT; };
+		81B89BAC03DF6ED9728F4158 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberModStudioApp.swift; sourceTree = "<group>"; };
+		E782311CB475E744A7D1BF82 /* CyberModStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CyberModStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE8A906B2982213D37AABCA7 /* ModManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModManagerView.swift; sourceTree = "<group>"; };
+		F16FBF0109A71516ADA6E3BB /* CyberModStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CyberModStudio.entitlements; sourceTree = "<group>"; };
+		F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NexusBrowserSheet.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		695C4B599491C623FE92C91A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84F819C96B9CEAAFC0825021 /* CyberModCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		20897779ADD90EBDB3577AC1 = {
+			isa = PBXGroup;
+			children = (
+				DC7F3F50E155225A5FDD570D /* CyberModStudio */,
+				F42BA93555647868FD92E4F1 /* Packages */,
+				44546489B3C5CF4C4788AEFD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		44546489B3C5CF4C4788AEFD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E782311CB475E744A7D1BF82 /* CyberModStudio.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DC7F3F50E155225A5FDD570D /* CyberModStudio */ = {
+			isa = PBXGroup;
+			children = (
+				F16FBF0109A71516ADA6E3BB /* CyberModStudio.entitlements */,
+				94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */,
+				F6F30F5F04B4A2E2AA3D8BE6 /* Views */,
+			);
+			path = CyberModStudio;
+			sourceTree = "<group>";
+		};
+		F42BA93555647868FD92E4F1 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				7A398BA895F7A19FFF1EC2A2 /* cybermod-studio */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		F6F30F5F04B4A2E2AA3D8BE6 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				81B89BAC03DF6ED9728F4158 /* ContentView.swift */,
+				22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */,
+				EE8A906B2982213D37AABCA7 /* ModManagerView.swift */,
+				F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		28644229DCF1FBE977873FB3 /* CyberModStudio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 230B464059369FB838708F4D /* Build configuration list for PBXNativeTarget "CyberModStudio" */;
+			buildPhases = (
+				A19ED51B2574D06EA0F2D219 /* Sources */,
+				695C4B599491C623FE92C91A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CyberModStudio;
+			packageProductDependencies = (
+				FB86EA128FD16F58D902FFB6 /* CyberModCore */,
+			);
+			productName = CyberModStudio;
+			productReference = E782311CB475E744A7D1BF82 /* CyberModStudio.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		91983F9CABA4E78B5F04C417 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 561F0D447B0AC3A011A1A9A0 /* Build configuration list for PBXProject "CyberModStudio" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 20897779ADD90EBDB3577AC1;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				98BDD5570CDE8C0B9F72E5BA /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 44546489B3C5CF4C4788AEFD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				28644229DCF1FBE977873FB3 /* CyberModStudio */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A19ED51B2574D06EA0F2D219 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C285C564847E0D0BEAEAC3B2 /* ContentView.swift in Sources */,
+				79CAB2E0150BDAEA2A947A9A /* CyberModStudioApp.swift in Sources */,
+				19E93CD98F9F9881AF0F55A9 /* FomodInstallerSheet.swift in Sources */,
+				896A5709CC591D1B752B7196 /* ModManagerView.swift in Sources */,
+				9D1298254132A3BDFDE7D7BF /* NexusBrowserSheet.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		26662616C76E861F966D9322 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		33ABA41C7E9BCF98D56B47D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6CD076106D6C6AE6A65F8C66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CyberModStudio/CyberModStudio.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "CyberMod Studio";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cybermodstudio.app;
+				PRODUCT_NAME = "CyberMod Studio";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		E4BD95455A1860B2AAB563A4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CyberModStudio/CyberModStudio.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "CyberMod Studio";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cybermodstudio.app;
+				PRODUCT_NAME = "CyberMod Studio";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		230B464059369FB838708F4D /* Build configuration list for PBXNativeTarget "CyberModStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E4BD95455A1860B2AAB563A4 /* Debug */,
+				6CD076106D6C6AE6A65F8C66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		561F0D447B0AC3A011A1A9A0 /* Build configuration list for PBXProject "CyberModStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33ABA41C7E9BCF98D56B47D2 /* Debug */,
+				26662616C76E861F966D9322 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		98BDD5570CDE8C0B9F72E5BA /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FB86EA128FD16F58D902FFB6 /* CyberModCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CyberModCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 91983F9CABA4E78B5F04C417 /* Project object */;
+}

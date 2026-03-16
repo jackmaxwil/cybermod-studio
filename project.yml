@@ -1,0 +1,38 @@
+name: CyberModStudio
+options:
+  bundleIdPrefix: com.cybermodstudio
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  CyberModCore:
+    path: .
+
+targets:
+  CyberModStudio:
+    type: application
+    platform: macOS
+    sources:
+      - path: CyberModStudio
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - package: CyberModCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cybermodstudio.app
+        PRODUCT_NAME: CyberMod Studio
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.10"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_CFBundleDisplayName: CyberMod Studio
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_HARDENED_RUNTIME: YES
+    entitlements:
+      path: CyberModStudio/CyberModStudio.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
