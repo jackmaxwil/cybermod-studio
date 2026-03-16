@@ -53,7 +53,7 @@ This script:
 **Development launcher (fallback, if installed launcher doesn't exist):**
 
 ```bash
-cd /Users/jackmazac/Development/RED4ext
+cd ~/Development/cyberpunk/RED4ext
 ./red4ext_launcher.sh
 ```
 

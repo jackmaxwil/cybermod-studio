@@ -22,8 +22,8 @@ Work sequentially through each task. Do not skip tasks. After each task, verify 
 ## KEY PATHS
 
 ```
-RED4EXT_ROOT="/Users/jackmazac/Development/RED4ext"
-SDK_ROOT="/Users/jackmazac/Development/RED4ext.SDK"
+RED4EXT_ROOT="~/Development/cyberpunk/RED4ext"
+SDK_ROOT="~/Development/cyberpunk/RED4ext.SDK"
 GAME_DIR="$HOME/Library/Application Support/Steam/steamapps/common/Cyberpunk 2077"
 GAME_BINARY="$GAME_DIR/Cyberpunk2077.app/Contents/MacOS/Cyberpunk2077"
 RED4EXT_LOG="$GAME_DIR/red4ext/logs/red4ext.log"
@@ -73,7 +73,7 @@ Always kill the game before relaunching.
 
 ## PROJECT CONTEXT
 
-### RED4ext (at /Users/jackmazac/Development/RED4ext)
+### RED4ext (at ~/Development/cyberpunk/RED4ext)
 
 Script extender / mod loader for Cyberpunk 2077, ported from Windows to macOS ARM64.
 
@@ -86,7 +86,7 @@ Script extender / mod loader for Cyberpunk 2077, ported from Windows to macOS AR
 
 **Build command:**
 ```bash
-cd /Users/jackmazac/Development/RED4ext
+cd ~/Development/cyberpunk/RED4ext
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(sysctl -n hw.ncpu)
@@ -95,7 +95,7 @@ make -j$(sysctl -n hw.ncpu)
 
 **Install command:**
 ```bash
-cd /Users/jackmazac/Development/RED4ext
+cd ~/Development/cyberpunk/RED4ext
 ./scripts/macos_install.sh --build
 ```
 
@@ -125,7 +125,7 @@ Where `1:0xOFFSET` means segment 1 (__TEXT) + hex offset.
 - `tests/` directory with unit, integration, and performance tests
 - Build with: `cmake .. -DRED4EXT_ENABLE_TESTS=ON`
 
-### RED4ext.SDK (at /Users/jackmazac/Development/RED4ext.SDK)
+### RED4ext.SDK (at ~/Development/cyberpunk/RED4ext.SDK)
 
 Header-only SDK for building Cyberpunk 2077 plugins.
 
@@ -138,14 +138,14 @@ Header-only SDK for building Cyberpunk 2077 plugins.
 
 **Validation commands:**
 ```bash
-cd /Users/jackmazac/Development/RED4ext.SDK
+cd ~/Development/cyberpunk/RED4ext.SDK
 python3 scripts/check_addresses.py --strict
 python3 scripts/check_loader_addresses.py --strict
 ```
 
 **Build smoke test:**
 ```bash
-cd /Users/jackmazac/Development/RED4ext.SDK
+cd ~/Development/cyberpunk/RED4ext.SDK
 mkdir -p build && cd build
 cmake .. -DRED4EXT_BUILD_EXAMPLES=ON
 cmake --build . --target macos_smoke_test
@@ -242,7 +242,7 @@ Build a validation plugin that:
    - **Simplest check:** read uint32 at address, mask for known ARM64 instruction patterns
 5. Logs PASS/FAIL per hash with the hash name, resolved address, and first instruction bytes
 
-Create this as a RED4ext plugin at `/Users/jackmazac/Development/RED4ext/tests/validation_plugin/`. It should:
+Create this as a RED4ext plugin at `~/Development/cyberpunk/RED4ext/tests/validation_plugin/`. It should:
 - Export `Main`, `Query`, `Supports` functions (standard RED4ext plugin interface)
 - Log to its own file: `$GAME_DIR/red4ext/plugins/address_validator/validation_results.log`
 - Use `spdlog` or simple `std::ofstream` logging
@@ -296,9 +296,9 @@ If all 126 pass (or the only "failures" are expected data/singleton pointers), p
 #### Task 3: Stress-test hook stack
 
 1. Ensure TweakXL is installed at `$GAME_DIR/red4ext/plugins/TweakXL/`
-   - Build from `/Users/jackmazac/Development/cp2077-tweak-xl` if needed
+   - Build from `~/Development/cyberpunk/cp2077-tweak-xl` if needed
 2. Ensure ModMenu is installed at `$GAME_DIR/red4ext/plugins/ModMenu/`
-   - Build from `/Users/jackmazac/Development/cp2077-modmenu` if needed
+   - Build from `~/Development/cyberpunk/cp2077-modmenu` if needed
 3. Keep the validation plugin from Task 1 installed
 4. Launch game via `launch_red4ext.sh`
 5. Read `red4ext.log` — confirm all 3 plugins loaded
@@ -320,7 +320,7 @@ If all 126 pass (or the only "failures" are expected data/singleton pointers), p
 
 #### Task 5: Code-sign automation
 
-Create a script at `/Users/jackmazac/Development/RED4ext/scripts/sign_all.sh` that:
+Create a script at `~/Development/cyberpunk/RED4ext/scripts/sign_all.sh` that:
 1. Finds all `.dylib` files in the game's `red4ext/` directory tree
 2. Signs each with `codesign -s - --force` (ad-hoc signing)
 3. Verifies each with `codesign -v`
@@ -328,7 +328,7 @@ Create a script at `/Users/jackmazac/Development/RED4ext/scripts/sign_all.sh` th
 
 #### Task 6: CI build validation
 
-Create a script at `/Users/jackmazac/Development/RED4ext/scripts/ci_validate.sh` that:
+Create a script at `~/Development/cyberpunk/RED4ext/scripts/ci_validate.sh` that:
 1. Builds RED4ext from clean (`rm -rf build && mkdir build && cd build && cmake .. && make`)
 2. Runs `check_addresses.py --strict` (from SDK repo)
 3. Runs unit tests if available (`RED4EXT_ENABLE_TESTS=ON`)
@@ -350,7 +350,7 @@ Create a script at `/Users/jackmazac/Development/RED4ext/scripts/ci_validate.sh`
 
 1. Run validation scripts:
    ```bash
-   cd /Users/jackmazac/Development/RED4ext.SDK
+   cd ~/Development/cyberpunk/RED4ext.SDK
    python3 scripts/check_addresses.py --strict
    python3 scripts/check_loader_addresses.py --strict
    ```
@@ -427,7 +427,7 @@ If all sizes match, skip this task.
 
 #### Task 6: Mark all examples as tested
 
-1. List all examples in `/Users/jackmazac/Development/RED4ext.SDK/examples/`
+1. List all examples in `~/Development/cyberpunk/RED4ext.SDK/examples/`
 2. Try to build each one (they may fail due to missing game headers — that's OK for examples that need runtime game objects)
 3. For each that builds: mark as "Builds on macOS"
 4. For `macos_smoke_test` and `macos_segment_resolution`: mark as "Tested on macOS"

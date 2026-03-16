@@ -116,10 +116,13 @@ CyberModStudio (App)
 
 ## Related Projects
 
-- `/Users/jackmazac/Development/RED4ext` - Script extender
-- `/Users/jackmazac/Development/cp2077-tweak-xl` - TweakXL
-- `/Users/jackmazac/Development/cp2077-archive-xl-macos` - ArchiveXL
-- `/Users/jackmazac/Development/macos-modmanager` - Python mod manager (predecessor)
+All sibling projects live under `~/Development/cyberpunk/`:
+
+- `RED4ext/` — Script extender
+- `cp2077-tweak-xl/` — TweakXL
+- `cp2077-archive-xl-macos/` — ArchiveXL
+- `cp2077-modmenu/` — ModMenu
+- `macos-modmanager/` — Python mod manager (superseded by this project)
 
 ## Common Pitfalls
 
