@@ -3,7 +3,6 @@
 build/
 DerivedData/
 .swiftpm/
-Package.resolved
 
 # Xcode user state
 xcuserdata/
