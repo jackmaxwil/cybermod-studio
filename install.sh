@@ -1,7 +1,9 @@
 #!/bin/bash
-# Installs the cybermod command-line tool from the newest GitHub release (release candidates included).
+# Installs the cybermod command-line tool (or, with --app, the CyberMod Studio app) from the newest GitHub release
+# (release candidates included).
 #
 #   curl -fsSL https://raw.githubusercontent.com/jackmaxwil/cybermod-studio/main/install.sh | bash
+#   curl -fsSL .../install.sh | bash -s -- --app              # CyberMod Studio.app into /Applications
 #   curl -fsSL .../install.sh | bash -s -- --system           # /usr/local/bin instead of ~/.local/bin
 #   curl -fsSL .../install.sh | bash -s -- --version 0.1.0    # a specific release
 set -euo pipefail
@@ -9,11 +11,13 @@ set -euo pipefail
 REPO=jackmaxwil/cybermod-studio
 DEST="$HOME/.local/bin"
 VERSION=""
+APP=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --system) DEST=/usr/local/bin ;;
+        --app) APP=1 ;;
         --version) VERSION="${2#v}"; shift ;;
-        *) echo "Unknown option: $1 (use --system or --version X.Y.Z)"; exit 1 ;;
+        *) echo "Unknown option: $1 (use --app, --system or --version X.Y.Z)"; exit 1 ;;
     esac
     shift
 done
@@ -32,6 +36,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 NAME="cybermod-$VERSION-macos-arm64.tar.gz"
+[[ -n "$APP" ]] && NAME="CyberModStudio-$VERSION-macos-arm64.zip"
 BASE="https://github.com/$REPO/releases/download/v$VERSION"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -41,6 +46,20 @@ curl -fsSL -o "$TMP/$NAME" "$BASE/$NAME" || fail "could not download $BASE/$NAME
 curl -fsSL -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS" || fail "could not download SHA256SUMS." "Check your connection and try again."
 (cd "$TMP" && grep " \*\{0,1\}$NAME\$" SHA256SUMS | shasum -a 256 -c - >/dev/null) \
     || fail "checksum mismatch for $NAME; nothing was installed." "Try again; if it keeps failing, report it at https://github.com/$REPO/issues"
+
+if [[ -n "$APP" ]]; then
+    ditto -x -k "$TMP/$NAME" "$TMP/app"
+    APPS=/Applications
+    [[ -w "$APPS" ]] || APPS="$HOME/Applications"
+    mkdir -p "$APPS"
+    rm -rf "$APPS/CyberMod Studio.app"
+    ditto "$TMP/app/CyberMod Studio.app" "$APPS/CyberMod Studio.app"
+    # The app is not notarized; the checksum above vouches for it, so clear the download quarantine.
+    xattr -dr com.apple.quarantine "$APPS/CyberMod Studio.app" 2>/dev/null || true
+    echo "Installed CyberMod Studio $VERSION to $APPS/CyberMod Studio.app"
+    echo "Next: open \"$APPS/CyberMod Studio.app\" and follow Get Set Up on the Play screen."
+    exit 0
+fi
 tar -xzf "$TMP/$NAME" -C "$TMP"
 
 SUDO=""

@@ -1,301 +1,71 @@
-# CyberMod Studio - Architecture Overview
-
-## System Context
+# Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              External Systems                                   │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐                       │
-│  │  Nexus Mods   │  │   macOS       │  │  Cyberpunk    │                       │
-│  │     API       │  │   Keychain    │  │    2077       │                       │
-│  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘                       │
-└──────────┼──────────────────┼──────────────────┼───────────────────────────────┘
-           │                  │                  │
-           │                  │                  │
-┌──────────▼──────────────────▼──────────────────▼───────────────────────────────┐
-│                          CyberMod Studio Platform                              │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                │
-│   ┌────────────────────────────────────────────────────────────────────────┐   │
-│   │                    CyberMod Studio (macOS App)                         │   │
-│   │                                                                        │   │
-│   │   ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐         │   │
-│   │   │    Mod     │ │    Game    │ │  Creation  │ │   Debug    │         │   │
-│   │   │  Manager   │ │   Runner   │ │   Studio   │ │   Studio   │         │   │
-│   │   └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘         │   │
-│   │         │              │              │              │                │   │
-│   │         └──────────────┴──────────────┼──────────────┘                │   │
-│   │                                       │                               │   │
-│   │                           ┌───────────▼───────────┐                   │   │
-│   │                           │    CyberModCore       │                   │   │
-│   │                           │   (Swift Package)     │                   │   │
-│   │                           └───────────────────────┘                   │   │
-│   └────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                │
-└────────────────────────────────────────────────────────────────────────────────┘
+CyberModKit (library)      all mod logic; Foundation, CryptoKit, Security only
+   ^        ^
+   |        CyberModModel (library)   @MainActor @Observable AppModel: state + one method per user action
+   |           ^
+cybermod     CyberMod Studio.app (Xcode, CyberModStudio/)   SwiftUI views over AppModel
+(CLI)
 ```
 
-## Package Structure
+## CyberModKit (`Sources/CyberModKit`)
 
-```
-cybermod-studio/
-├── Package.swift                    # Swift Package Manager manifest
-├── Sources/
-│   ├── CyberModCore/               # Core business logic library
-│   │   ├── ModEngine/              # Mod management
-│   │   ├── GameBridge/             # Game launching & monitoring
-│   │   ├── ProjectEngine/          # Mod project creation
-│   │   ├── PortingEngine/          # Windows→macOS porting
-│   │   ├── DebugEngine/            # Runtime debugging
-│   │   ├── Database/               # SQLite persistence
-│   │   ├── Schemas/                # JSON schemas & validation
-│   │   ├── IPC/                    # Inter-process communication
-│   │   └── Utilities/              # Shared utilities
-│   │
-│   └── CyberModCLI/                # Command-line interface
-│       └── Commands/
-│
-├── CyberModStudio/                  # SwiftUI macOS app
-│   ├── Views/                       # UI views
-│   ├── ViewModels/                  # Observable view models
-│   ├── Services/                    # App-level services
-│   └── Resources/                   # Assets, schemas
-│
-├── Tests/
-│   └── CyberModCoreTests/          # Unit & integration tests
-│
-├── docs/                            # Documentation
-│   ├── PRD.md
-│   ├── DESIGN.md
-│   ├── VIEWS.md
-│   ├── IPC_PROTOCOL.md
-│   ├── ARCHITECTURE.md
-│   ├── api/
-│   ├── schemas/
-│   └── protocols/
-│
-├── scripts/                         # Build & utility scripts
-└── config/                          # Configuration templates
-```
+| File | What |
+|---|---|
+| `Kit.swift` | `Kit`: game folder, state folder, `dryRun`, `log` (progress lines), seams (`session`, `isGameRunning`, `openURL`); `KitError {message, hint, details}`; `Config` |
+| `Placement.swift` | where each file of a mod goes on macOS; refuses Windows-only content |
+| `ModStore.swift` | one manifest per mod (`<state>/mods/<id>.json`), install / remove / enable / disable (hold folder) / adopt |
+| `Sources.swift` | `ModSource` (path, https, `github:`, `nexus:`, `nxm://`, `registry:`), fetch + unpack, `ModStore.add` |
+| `Network.swift` | HTTP, GitHub releases, Nexus Mods API v1, Keychain (`Secrets`) |
+| `Loader.swift` | RED4ext bundle install / update / uninstall (verified zip, address-DB build check), Mach-O UUID |
+| `Play.swift` | `PlaySession`: runs `<game>/launch_red4ext.sh`, events (`output`, `compileFailed`, `gameStarted`, `exited(report)`), `stop()` |
+| `Doctor.swift` | findings with stable ids and fix ids, `Doctor.fix`, RDAR archive tables and conflicts |
+| `Library.swift` | `Updates.check`, `ModStore.update`, `LoadOrder.list` / `prioritize` (`!` prefix rename, recorded in the manifest) |
+| `Registry.swift` | community index (docs/REGISTRY.md) |
 
-## Module Dependencies
+Long calls are `async` and stop before changing anything once their task is cancelled (downloads and unpacking go to a
+temp folder; copies land next to their destination and are renamed into place).
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       CyberModStudio App                        │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │   Views  │ │ViewModels│ │ Services │ │Resources │           │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────────┘           │
-│       │            │            │                               │
-│       └────────────┴────────────┘                               │
-│                     │                                           │
-└─────────────────────┼───────────────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        CyberModCore                             │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │ModEngine │ │GameBridge│ │ProjectEng│ │DebugEng  │           │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘           │
-│       │            │            │            │                  │
-│       └────────────┴────────────┼────────────┘                  │
-│                                 │                               │
-│  ┌──────────┐ ┌──────────┐ ┌────▼─────┐ ┌──────────┐           │
-│  │ Database │ │  Schemas │ │   IPC    │ │Utilities │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-└─────────────────────────────────────────────────────────────────┘
-                      │
-                      │ Dependencies
-                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    External Packages                            │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │  GRDB   │ │  Yams   │ │ Crypto  │ │AsyncHTTP│ │   ZIP   │   │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-```
+## CyberModModel (`Sources/CyberModModel/AppModel.swift`)
 
-## Data Flow
+`AppModel(kit:)` holds what the screens show (`mods`, `unmanaged`, `doctor`, `archives`, `updates`, `registry`,
+`activities`, `play`, `gameOutput`, `lastExit`, `failure`, `notice`, `nexusWaiting`) and one method per action
+(`add`, `setEnabled`, `remove`, `adopt`, `installLoader`, `fix`, `prioritize`, `checkForUpdates`, `update`,
+`startGame`, `stopGame`, settings). Every action goes through `run(_:)`: one at a time, off the main thread, refused
+while the game runs, cancellable (`cancel()`), recorded as an `Activity` with the library's progress lines, errors
+turned into `failure` (the `KitError` with its `Next:` hint), then `refresh()` re-reads the game folder.
+No mod rules live here; it only calls the library and arranges results for display.
 
-### Mod Installation Flow
+Non-Premium Nexus downloads: the library opens the files page and throws `Nexus.premiumOnly`; the model turns that into
+`nexusWaiting`, and the `nxm://` link the browser hands to the app (`onOpenURL`) continues the install.
 
-```
-User                App UI              ModEngine           FileSystem          Database
- │                    │                     │                   │                  │
- │  Select archive    │                     │                   │                  │
- │───────────────────>│                     │                   │                  │
- │                    │  install(source)    │                   │                  │
- │                    │────────────────────>│                   │                  │
- │                    │                     │  extract()        │                  │
- │                    │                     │──────────────────>│                  │
- │                    │                     │  <staging dir>    │                  │
- │                    │                     │<──────────────────│                  │
- │                    │                     │  analyze()        │                  │
- │                    │                     │──────────────────>│                  │
- │                    │                     │  <mod type>       │                  │
- │                    │                     │<──────────────────│                  │
- │                    │                     │  checkCompatibility()               │
- │                    │                     │─────────────────────────────────────>│
- │                    │                     │  <compat result>                    │
- │                    │                     │<─────────────────────────────────────│
- │                    │                     │  deploy()         │                  │
- │                    │                     │──────────────────>│                  │
- │                    │                     │  <deployed files> │                  │
- │                    │                     │<──────────────────│                  │
- │                    │                     │  recordInstallation()               │
- │                    │                     │─────────────────────────────────────>│
- │                    │                     │  <mod record>                       │
- │                    │                     │<─────────────────────────────────────│
- │                    │  <InstalledMod>     │                   │                  │
- │                    │<────────────────────│                   │                  │
- │  Update UI         │                     │                   │                  │
- │<───────────────────│                     │                   │                  │
-```
+## App (`CyberModStudio/`, project generated from `project.yml` by xcodegen)
 
-### Game Launch Flow
+| Path | What |
+|---|---|
+| `App/CyberModStudioApp.swift` | single `Window` + `Settings` scenes, sidebar, window-wide drop, alerts, menu commands, `onOpenURL` |
+| `Features/Play` | first-run checklist, Play/Stop, game output, exit report |
+| `Features/Library` | mods table, filters, inspector, updates, remove |
+| `Features/LoadOrder` | archives in load order, overlaps, Move Up / Let X Win |
+| `Features/Discover` | add from a link, Nexus Mods and nxm:// handler status, registry search |
+| `Features/Health` | doctor findings with Fix buttons, mod loader |
+| `Features/Activity` | operations with output and Cancel |
+| `Features/Settings` | game folder, Nexus API key, nxm:// handler, registry URL |
+| `Components/` | shared presentation helpers |
+| `Info.plist` | `CFBundleURLTypes` for `nxm` (merged into the generated Info.plist) |
 
-`GameLauncher` does not reimplement launching. It runs `launch_red4ext.sh` (shipped by RED4ext into the game
-folder) with the game folder as working directory, passing the profile's arguments and environment, and writes
-its output to `~/Library/Logs/CyberModStudio/game.log`. The script:
+The app is unsandboxed (it writes the game folder and runs the launcher script) with the hardened runtime.
 
-1. Refuses to start if the game binary's UUID does not match `red4ext/bin/x64/cyberpunk2077_addresses.json`
-   (game updated) or the binary lost RED4ext's signature (`allow-unsigned-executable-memory`; fix with
-   `red4ext/macos/scripts/install_macos.sh`).
-2. Stages `Scripts` only of plugins that pass `red4ext/bin/red4ext_plugin_check` and are not ignored in
-   `red4ext/config.ini`, then compiles with `engine/tools/scc` (stops on errors).
-3. Merges `r6/input` key bindings with `engine/tools/inputloader.pl`, run from the game folder.
-4. Starts the game with `DYLD_INSERT_LIBRARIES=red4ext/RED4ext.dylib` and unstages plugin scripts after exit.
+## State
 
-A refusal is a non-zero exit; `GameLauncher.exitReport` then shows the script's output. Stopping the game from the
-app sends SIGTERM to the game (the script's child) so the script still cleans up.
+`~/Library/Application Support/CyberModStudio/` (or `$CYBERMOD_HOME`): `config.json`, and per game folder
+`games/<hash>/` with mod manifests, disabled mods, `red4ext.json`, `removed/`. Game output:
+`~/Library/Logs/CyberModStudio/game.log`. Nexus API key: Keychain, service `CyberModStudio`.
 
-## Security Model
+## Tests
 
-### No Privileged Helper
-
-The app runs unsandboxed as the user and launches the game itself; there is no daemon or XPC service.
-`DYLD_INSERT_LIBRARIES` injection works because RED4ext's installer re-signs the game binary with its entitlements.
-`launch_red4ext.sh` checks that before every launch; the app never re-signs anything.
-
-### API Key Storage
-
-```swift
-// Nexus API key stored in Keychain
-let query: [String: Any] = [
-    kSecClass: kSecClassGenericPassword,
-    kSecAttrService: "com.cybermod.studio",
-    kSecAttrAccount: "nexus-api-key",
-    kSecValueData: apiKey.data(using: .utf8)!,
-    kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-]
-```
-
-## Error Handling Strategy
-
-### Error Hierarchy
-
-```swift
-public enum CyberModError: LocalizedError {
-    // Installation errors
-    case installationFailed(InstallError)
-    case dependencyMissing(String)
-    case incompatibleMod([IncompatibilityReason])
-    
-    // Game errors  
-    case gameNotFound
-    case launchFailed(LaunchError)
-    case connectionFailed(ConnectionError)
-    
-    // Project errors
-    case projectNotFound
-    case validationFailed([ValidationError])
-    case buildFailed(BuildError)
-    
-    // IPC errors
-    case timeout(operation: String)
-    case disconnected
-    case protocolError(String)
-}
-
-public enum InstallError: Error {
-    case archiveCorrupt
-    case extractionFailed(String)
-    case diskFull
-    case permissionDenied(URL)
-}
-```
-
-### Recovery Strategies
-
-| Error Type | Recovery Strategy |
-|------------|-------------------|
-| Archive corrupt | Prompt re-download |
-| Disk full | Show disk usage, suggest cleanup |
-| Permission denied | Request permission, show path |
-| Game not found | Open game path picker |
-| Connection timeout | Retry with backoff |
-| Incompatible mod | Show alternatives |
-
-## Performance Considerations
-
-### Async Operations
-
-All I/O-bound operations are async:
-
-```swift
-public actor ModManager {
-    public func install(_ source: ModSource) async throws -> Mod
-    public func listMods() async throws -> [Mod]
-    public func enable(_ mod: Mod) async throws
-}
-```
-
-### Caching Strategy
-
-| Data | Cache Location | TTL | Invalidation |
-|------|----------------|-----|--------------|
-| Nexus mod metadata | SQLite | 1 hour | Manual refresh |
-| TweakDB schema | Memory | Session | Game restart |
-| Address database | SQLite | Permanent | Game update |
-| Mod file checksums | SQLite | Permanent | File change |
-
-### Lazy Loading
-
-Large data sets use pagination:
-
-```swift
-public struct PaginatedResult<T> {
-    public let items: [T]
-    public let offset: Int
-    public let total: Int
-    public var hasMore: Bool { offset + items.count < total }
-}
-```
-
-## Testing Strategy
-
-### Test Categories
-
-| Category | Scope | Tools |
-|----------|-------|-------|
-| Unit | Individual functions | XCTest |
-| Integration | Module interactions | XCTest + TestContainers |
-| UI | SwiftUI views | ViewInspector |
-| E2E | Full workflows | XCUITest |
-
-### Mock Strategy
-
-```swift
-// Protocol-based mocking
-protocol ModManagerProtocol {
-    func install(_ source: ModSource) async throws -> Mod
-}
-
-class MockModManager: ModManagerProtocol {
-    var installResult: Result<Mod, Error> = .failure(CyberModError.gameNotFound)
-    
-    func install(_ source: ModSource) async throws -> Mod {
-        try installResult.get()
-    }
-}
-```
+`swift test`: `CyberModKitTests` (placement, store, loader, doctor, play, network over a URLProtocol stub) and
+`CyberModModelTests` (the app's flows through `AppModel`: first run, loader from a zip, add / disable / enable / remove,
+adopt, load order, doctor fix, play with a stub launcher, errors, cancellation, Nexus nxm handoff). All use temporary
+fake game folders; nothing touches the real game, Steam or the network.

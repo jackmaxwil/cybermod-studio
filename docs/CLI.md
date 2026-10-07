@@ -73,3 +73,5 @@ is running.
   `exited(code, report)`) and `stop()`. Tests use a stub `launch_red4ext.sh` in a temporary game folder.
 - `Doctor.run` returns findings with stable `id` and optional `fix`; `Doctor.fix(id, kit:)` applies it.
 - `ModStore.adopt()`, `Updates.check(kit:)`, `ModStore.update(id)`, `LoadOrder.list/prioritize`.
+- `Config.set(key, value)` validates and saves a setting (the CLI's `config set` and the app's Settings).
+- The app reaches all of this through `CyberModModel.AppModel` (see [ARCHITECTURE.md](ARCHITECTURE.md)).
