@@ -197,12 +197,6 @@ struct AddLinkSheet: View {
         }
         .padding(20)
         .frame(width: 520)
-        .onAppear {
-            // Start with a link that is already on the clipboard.
-            if let clip = NSPasteboard.general.string(forType: .string), (try? ModSource.parse(clip)).map({ if case .local = $0 { false } else { true } }) == true {
-                text = clip
-            }
-        }
     }
 
     private func add() {

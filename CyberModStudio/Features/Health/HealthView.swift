@@ -52,7 +52,7 @@ struct HealthView: View {
         .formStyle(.grouped)
         .toolbar {
             ToolbarItemGroup {
-                let fixes = model.problems.compactMap(\.fix)
+                let fixes = model.problems.compactMap(\.fix).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
                 Button("Fix All") {
                     Task {
                         for fix in fixes {
