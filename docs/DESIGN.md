@@ -47,18 +47,8 @@
 │                                         │                                       │
 └─────────────────────────────────────────┼───────────────────────────────────────┘
                                           │
-                                          │ XPC / Unix Socket
-                                          ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           CyberModDaemon                                        │
-│                      (Privileged Helper Tool)                                   │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐    │
-│  │ GameMonitor   │  │ Injector      │  │ DebugBridge   │  │ AddressDB     │    │
-│  │ (Process mgmt)│  │ (dyld insert) │  │ (Mach tasks)  │  │ (Resolution)  │    │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘    │
-└─────────────────────────────────────────┼───────────────────────────────────────┘
-                                          │
-                                          │ DYLD_INSERT_LIBRARIES
+                                          │ Process launch + DYLD_INSERT_LIBRARIES
+                                          │ Unix socket to DebugAgent
                                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                         Game Process (Cyberpunk 2077)                           │
@@ -75,7 +65,6 @@
 |-----------|---------------|---------|
 | CyberMod Studio | UI, user interaction, ViewModels | Main App |
 | CyberModCore | Business logic, data access | Main App |
-| CyberModDaemon | Privileged operations, game injection | LaunchDaemon |
 | DebugAgent | In-game IPC, runtime data access | Game Process |
 
 ## 2. Module Deep Dives
@@ -628,12 +617,10 @@ See [IPC_PROTOCOL.md](./IPC_PROTOCOL.md) for the complete IPC specification.
 The main application runs with minimal entitlements:
 - `com.apple.security.files.user-selected.read-write` - User-selected files
 - `com.apple.security.network.client` - Nexus API access
-- `com.apple.security.temporary-exception.mach-lookup` - XPC to daemon
 
-The daemon runs as a LaunchDaemon with elevated privileges:
-- Process spawning (game launch)
-- DYLD injection
-- Mach task access (debugging)
+There is no privileged helper. Studio launches the game as the user with `DYLD_INSERT_LIBRARIES` set to
+RED4ext; this works because the game binary carries RED4ext's entitlements, which `GameLauncher` verifies
+before launch (it never re-signs).
 
 ### 5.2 Secrets Management
 

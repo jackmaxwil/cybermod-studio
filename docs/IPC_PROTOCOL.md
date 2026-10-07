@@ -2,28 +2,11 @@
 
 ## 1. Overview
 
-The IPC (Inter-Process Communication) protocol enables real-time communication between:
-- **CyberMod Studio** (macOS app) ↔ **CyberModDaemon** (privileged helper)
-- **CyberModDaemon** ↔ **DebugAgent** (in-game component)
+The IPC (Inter-Process Communication) protocol connects **CyberMod Studio** (macOS app) directly to the
+**DebugAgent** (an in-game RED4ext plugin). There is no helper daemon: Studio launches the game itself
+(see `GameLauncher`) and talks to the agent over a socket.
 
-## 2. Transport Layers
-
-### 2.1 App ↔ Daemon: XPC
-
-Uses Apple's XPC Services framework for secure, sandboxed communication.
-
-```swift
-// XPC Service Interface
-@objc protocol CyberModDaemonProtocol {
-    func launchGame(config: Data, reply: @escaping (Data?, Error?) -> Void)
-    func terminateGame(pid: Int32, reply: @escaping (Bool, Error?) -> Void)
-    func injectDylib(pid: Int32, path: String, reply: @escaping (Bool, Error?) -> Void)
-    func connectDebugAgent(pid: Int32, reply: @escaping (Int32, Error?) -> Void)
-    func readMemory(pid: Int32, address: UInt64, size: Int, reply: @escaping (Data?, Error?) -> Void)
-}
-```
-
-### 2.2 Daemon ↔ DebugAgent: Unix Domain Socket
+## 2. Transport: Unix Domain Socket
 
 Uses a Unix domain socket for high-performance, low-latency communication.
 

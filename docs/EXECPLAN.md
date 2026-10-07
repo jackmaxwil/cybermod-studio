@@ -317,25 +317,7 @@ view session history.
 
 ---
 
-### 4.3 Phase 2 — CyberModDaemon
-
-**Current:** 5% (stub)
-**Goal:** Privileged helper for operations requiring elevation
-
-| # | Task | Detail | Est. |
-|---|------|--------|------|
-| 1 | XPC service skeleton | Create launchd plist, XPC interface protocol, basic client/server handshake. | 3h |
-| 2 | Privileged file operations | Move files to protected game directories, modify game configs, manage code signatures. | 2h |
-| 3 | Dylib injection management | Manage `DYLD_INSERT_LIBRARIES` setup, sign dylibs on behalf of user. | 2h |
-| 4 | Security model | Implement authorization rights, user approval prompts, audit logging. | 2h |
-| 5 | Integration with Studio | Wire daemon calls into GameLauncher + ModManager. Fall back gracefully if daemon not installed. | 2h |
-
-**Exit criteria:** Daemon installs via helper tool, handles privileged ops,
-Studio uses it transparently for file operations and game launching.
-
----
-
-### 4.4 Phase 2 — Debug Studio
+### 4.3 Phase 2 — Debug Studio
 
 **Current:** 5% (placeholder)
 **Goal:** Runtime game inspection from Studio
@@ -355,7 +337,7 @@ inspect memory, view aggregated logs — all live from Studio.
 
 ---
 
-### 4.5 Phase 2 — Creation Studio
+### 4.4 Phase 2 — Creation Studio
 
 **Current:** 5% (placeholder)
 **Goal:** Create new mods from within Studio
@@ -375,7 +357,7 @@ build if needed, package for distribution.
 
 ---
 
-### 4.6 Phase 2 — Porting Studio
+### 4.5 Phase 2 — Porting Studio
 
 **Current:** 5% (placeholder)
 **Goal:** Assist porting Windows mods to macOS
@@ -419,12 +401,11 @@ generate a macOS project scaffold, guide user through address mapping.
 | 3.1 | MetalFX Denoiser completion | 36h |
 | 4.1 | Studio — Mod Manager | 25h |
 | 4.2 | Studio — Game Runner | 10h |
-| 4.3 | Studio — Daemon | 11h |
-| 4.4 | Studio — Debug Studio | 21h |
-| 4.5 | Studio — Creation Studio | 21h |
-| 4.6 | Studio — Porting Studio | 13h |
+| 4.3 | Studio — Debug Studio | 21h |
+| 4.4 | Studio — Creation Studio | 21h |
+| 4.5 | Studio — Porting Studio | 13h |
 | 5 | Polish & Release | 21h |
-| | **Total** | **~227h** |
+| | **Total** | **~216h** |
 
 ## Critical Path
 

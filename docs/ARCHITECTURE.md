@@ -155,70 +155,35 @@ User                App UI              ModEngine           FileSystem          
 ### Game Launch Flow
 
 ```
-User                App                 Daemon              Game Process        DebugAgent
- │                   │                    │                      │                  │
- │  Click Launch     │                    │                      │                  │
- │──────────────────>│                    │                      │                  │
- │                   │  launchGame()      │                      │                  │
- │                   │───────────────────>│                      │                  │
- │                   │                    │  spawn process       │                  │
- │                   │                    │  (DYLD_INSERT_LIBS)  │                  │
- │                   │                    │─────────────────────>│                  │
- │                   │                    │                      │  init()          │
- │                   │                    │                      │<─────────────────│
- │                   │                    │                      │  load plugins    │
- │                   │                    │                      │<─────────────────│
- │                   │                    │                      │  start IPC       │
- │                   │                    │                      │<─────────────────│
- │                   │  <GameSession>     │                      │                  │
- │                   │<───────────────────│                      │                  │
- │                   │                    │                      │                  │
- │                   │  connect()         │                      │                  │
- │                   │─────────────────────────────────────────────────────────────>│
- │                   │                    │                      │                  │
- │                   │  <handshake ack>   │                      │                  │
- │                   │<─────────────────────────────────────────────────────────────│
- │  Show running     │                    │                      │                  │
- │<──────────────────│                    │                      │                  │
+User                App (GameLauncher)                         Game Process        DebugAgent
+ │                   │                                            │                  │
+ │  Click Launch     │                                            │                  │
+ │──────────────────>│                                            │                  │
+ │                   │  verify game entitlements (never re-sign)  │                  │
+ │                   │  stage Scripts of plugins RED4ext will     │                  │
+ │                   │  load (PluginGate), compile with scc       │                  │
+ │                   │  spawn process (DYLD_INSERT_LIBRARIES),    │                  │
+ │                   │  stdout/stderr -> ~/Library/Logs/          │                  │
+ │                   │  CyberModStudio/game.log                   │                  │
+ │                   │───────────────────────────────────────────>│                  │
+ │                   │                                            │  load plugins    │
+ │                   │                                            │<─────────────────│
+ │                   │  connect()                                 │                  │
+ │                   │──────────────────────────────────────────────────────────────>│
+ │                   │  <handshake ack>                           │                  │
+ │                   │<──────────────────────────────────────────────────────────────│
+ │  Show running     │                                            │                  │
+ │<──────────────────│                                            │                  │
 ```
 
 ## Security Model
 
-### Privilege Separation
+### No Privileged Helper
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    User Space (Sandboxed)                       │
-│                                                                 │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │              CyberMod Studio App                        │   │
-│   │                                                         │   │
-│   │  Entitlements:                                          │   │
-│   │  • com.apple.security.files.user-selected.read-write    │   │
-│   │  • com.apple.security.network.client                    │   │
-│   │  • com.apple.security.keychain-access-groups            │   │
-│   │  • com.apple.security.temporary-exception.mach-lookup   │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                              │                                  │
-│                         XPC  │  (Validated)                     │
-│                              │                                  │
-└──────────────────────────────┼──────────────────────────────────┘
-                               │
-┌──────────────────────────────┼──────────────────────────────────┐
-│                    Privileged Space                             │
-│                              │                                  │
-│   ┌──────────────────────────▼──────────────────────────────┐   │
-│   │              CyberModDaemon (LaunchDaemon)              │   │
-│   │                                                         │   │
-│   │  Capabilities:                                          │   │
-│   │  • Process spawning with custom environment             │   │
-│   │  • DYLD_INSERT_LIBRARIES injection                      │   │
-│   │  • Mach task access (debugging)                         │   │
-│   │  • Memory read/write via task_for_pid                   │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+The app runs unsandboxed as the user and launches the game itself; there is no daemon or XPC service.
+`DYLD_INSERT_LIBRARIES` injection works because the game binary carries RED4ext's entitlements
+(`allow-dyld-environment-variables`, `disable-library-validation`, `allow-unsigned-executable-memory`).
+`GameLauncher` checks them before every launch and fails with the re-sign command if they are missing.
 
 ### API Key Storage
 

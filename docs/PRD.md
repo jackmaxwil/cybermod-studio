@@ -184,7 +184,7 @@ A single application where mod users can install and manage mods, mod creators c
 |----|-------------|
 | T2.1 | SwiftUI for all UI components |
 | T2.2 | Swift Package for core logic (CyberModCore) |
-| T2.3 | XPC for daemon communication |
+| T2.3 | Unix socket to the in-game DebugAgent (no helper daemon) |
 | T2.4 | SQLite/GRDB for persistence |
 | T2.5 | Actor-based concurrency model |
 
