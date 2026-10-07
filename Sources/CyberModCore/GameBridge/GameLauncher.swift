@@ -67,7 +67,7 @@ public actor GameLauncher {
         }
         
         try verifyEntitlements(executablePath)
-        try compileScripts(gamePath: profile.gamePath)
+        let skippedScripts = try compileScripts(gamePath: profile.gamePath)
         
         logger.info("Launching Cyberpunk 2077 from \(executablePath.path)")
         
@@ -105,11 +105,21 @@ public actor GameLauncher {
         process.environment = environment
         process.currentDirectoryURL = profile.gamePath
         
-        // Set up output capture
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
+        // stdout/stderr go to a file: an undrained pipe blocks the game once its buffer fills.
+        let logURL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Logs/CyberModStudio/game.log")
+        let log: FileHandle
+        do {
+            try FileManager.default.createDirectory(at: logURL.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: logURL.path, contents: nil)
+            log = try FileHandle(forWritingTo: logURL)
+        } catch {
+            throw GameLaunchError.launchFailed(reason: "Cannot open \(logURL.path): \(error.localizedDescription)")
+        }
+        defer { try? log.close() }
+        process.standardOutput = log
+        process.standardError = log
         
         // Launch process
         do {
@@ -125,8 +135,8 @@ public actor GameLauncher {
             profile: profile,
             startedAt: Date(),
             process: process,
-            outputPipe: outputPipe,
-            errorPipe: errorPipe
+            logURL: logURL,
+            skippedScripts: skippedScripts
         )
         
         activeSession = session
@@ -189,18 +199,21 @@ public actor GameLauncher {
         }
     }
     
-    /// Stages installed plugins' Scripts into r6/scripts/zz_red4ext_plugins and compiles with scc, like launch_red4ext.sh.
-    private func compileScripts(gamePath: URL) throws {
+    /// Stages the Scripts of plugins RED4ext will load into r6/scripts/zz_red4ext_plugins and compiles with scc,
+    /// like launch_red4ext.sh. Returns the plugins whose Scripts were skipped, with the reason.
+    private func compileScripts(gamePath: URL) throws -> [String] {
         let fm = FileManager.default
         let stage = gamePath.appendingPathComponent("r6/scripts/zz_red4ext_plugins")
         try? fm.removeItem(at: stage)
-        let plugins = gamePath.appendingPathComponent("red4ext/plugins")
-        for plugin in (try? fm.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil)) ?? [] {
-            let scripts = plugin.appendingPathComponent("Scripts")
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: scripts.path, isDirectory: &isDir), isDir.boolValue else { continue }
+        let gate = PluginGate.evaluate(gamePath: gamePath)
+        for plugin in gate.allowed {
             try fm.createDirectory(at: stage, withIntermediateDirectories: true)
-            try fm.copyItem(at: scripts, to: stage.appendingPathComponent(plugin.lastPathComponent))
+            try fm.copyItem(at: plugin.appendingPathComponent("Scripts"),
+                            to: stage.appendingPathComponent(plugin.lastPathComponent))
+        }
+        let skipped = gate.skipped.map { "\($0.name): \($0.reason)" }
+        for line in skipped {
+            logger.warning("Not staging Scripts of \(line)")
         }
         
         let scc = gamePath.appendingPathComponent("engine/tools/scc")
@@ -216,6 +229,7 @@ public actor GameLauncher {
         if fm.isExecutableFile(atPath: inputLoader.path) {
             _ = try? run(inputLoader, [])
         }
+        return skipped
     }
     
     private func run(_ executable: URL, _ arguments: [String], mergeStderr: Bool = true) throws -> (status: Int32, output: Data) {
@@ -256,7 +270,11 @@ public actor GameLauncher {
             }
         }
         
-        var report = crashes.isEmpty
+        var report = "Game output: \(session.logURL.path)\n"
+        if !session.skippedScripts.isEmpty {
+            report += "Plugin Scripts not staged:\n" + session.skippedScripts.map { "  \($0)" }.joined(separator: "\n") + "\n"
+        }
+        report += crashes.isEmpty
             ? "No new crash reports."
             : "New crash reports:\n" + crashes.map { "  \($0.path)" }.joined(separator: "\n")
         
@@ -281,9 +299,12 @@ public class GameSession: @unchecked Sendable {
     public let profile: ModProfile
     public let startedAt: Date
     
+    /// File receiving the game's stdout and stderr.
+    public let logURL: URL
+    /// "plugin: reason" for each plugin whose Scripts were not staged because RED4ext would refuse it.
+    public let skippedScripts: [String]
+    
     internal let process: Process
-    internal let outputPipe: Pipe
-    internal let errorPipe: Pipe
     
     private var _status: GameSessionStatus = .running
     public var status: GameSessionStatus {
@@ -297,16 +318,16 @@ public class GameSession: @unchecked Sendable {
         profile: ModProfile,
         startedAt: Date,
         process: Process,
-        outputPipe: Pipe,
-        errorPipe: Pipe
+        logURL: URL,
+        skippedScripts: [String] = []
     ) {
         self.id = id
         self.pid = pid
         self.profile = profile
         self.startedAt = startedAt
         self.process = process
-        self.outputPipe = outputPipe
-        self.errorPipe = errorPipe
+        self.logURL = logURL
+        self.skippedScripts = skippedScripts
     }
     
     /// Whether the game is still running

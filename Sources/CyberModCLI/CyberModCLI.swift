@@ -356,6 +356,10 @@ struct LaunchCommand: AsyncParsableCommand {
         do {
             let session = try await launcher.launch(profile: profile, options: options)
             print("✓ Game launched (PID: \(session.pid))")
+            print("Game output: \(session.logURL.path)")
+            for line in session.skippedScripts {
+                print("Scripts not staged, \(line)")
+            }
             print("\nPress Ctrl+C to exit (game will continue running)")
             
             // Wait for game to exit
