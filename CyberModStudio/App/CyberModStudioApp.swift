@@ -29,6 +29,7 @@ struct CyberModStudioApp: App {
                     Task { await model.open(url) }
                 }
         }
+        .defaultSize(width: 1180, height: 760)
         .commands { AppCommands(model: model, navigator: navigator) }
 
         Settings {

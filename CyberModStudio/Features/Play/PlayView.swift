@@ -61,6 +61,7 @@ struct PlayView: View {
         guard model.gameFound else { return "Game folder not found" }
         let loader = model.loaderInstalled ? "RED4ext \(model.loaderVersion ?? "")" : "Mod loader not installed"
         let enabled = model.mods.filter(\.enabled).count
+        if model.mods.isEmpty { return "\(loader) · No mods yet" }
         return "\(loader) · \(enabled) of \(model.mods.count) mod\(model.mods.count == 1 ? "" : "s") enabled"
     }
 
