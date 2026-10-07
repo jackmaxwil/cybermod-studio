@@ -1,6 +1,6 @@
 # CyberMod Studio — Status
 
-> **Last updated:** 2026-02-21
+> **Last updated:** 2026-10-07
 > **Phase:** 1 (Mod Manager + Game Runner)
 > **Platform:** macOS 14+ (Apple Silicon)
 
@@ -26,9 +26,8 @@
 - [x] `FomodInstallerSheet` — step-through wizard for FOMOD options
 
 ### Game Runner (Phase 4.2)
-- [x] `GameLauncher` actor with DYLD_INSERT_LIBRARIES injection
+- [x] `GameLauncher` actor that runs the game folder's `launch_red4ext.sh`
 - [x] `GameRunnerView` — launch button, status, uptime, PID display
-- [x] `AppState.toggleGame()` fixed — calls `configure(gamePath:)` before launch
 - [x] Real-time uptime timer
 - [x] Game path configuration (browse picker)
 - [x] Framework status display (RED4ext, TweakXL, ArchiveXL, ModMenu)
@@ -44,13 +43,7 @@
 
 ## Build
 
-```bash
-# SPM packages
-swift build --target CyberModCore
-
-# Open Xcode project
-open CyberModStudio.xcodeproj
-```
+See README.md.
 
 ## Key files
 

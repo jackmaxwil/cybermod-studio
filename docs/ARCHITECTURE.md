@@ -154,36 +154,28 @@ User                App UI              ModEngine           FileSystem          
 
 ### Game Launch Flow
 
-```
-User                App (GameLauncher)                         Game Process        DebugAgent
- │                   │                                            │                  │
- │  Click Launch     │                                            │                  │
- │──────────────────>│                                            │                  │
- │                   │  verify game entitlements (never re-sign)  │                  │
- │                   │  stage Scripts of plugins RED4ext will     │                  │
- │                   │  load (PluginGate), compile with scc       │                  │
- │                   │  spawn process (DYLD_INSERT_LIBRARIES),    │                  │
- │                   │  stdout/stderr -> ~/Library/Logs/          │                  │
- │                   │  CyberModStudio/game.log                   │                  │
- │                   │───────────────────────────────────────────>│                  │
- │                   │                                            │  load plugins    │
- │                   │                                            │<─────────────────│
- │                   │  connect()                                 │                  │
- │                   │──────────────────────────────────────────────────────────────>│
- │                   │  <handshake ack>                           │                  │
- │                   │<──────────────────────────────────────────────────────────────│
- │  Show running     │                                            │                  │
- │<──────────────────│                                            │                  │
-```
+`GameLauncher` does not reimplement launching. It runs `launch_red4ext.sh` (shipped by RED4ext into the game
+folder) with the game folder as working directory, passing the profile's arguments and environment, and writes
+its output to `~/Library/Logs/CyberModStudio/game.log`. The script:
+
+1. Refuses to start if the game binary's UUID does not match `red4ext/bin/x64/cyberpunk2077_addresses.json`
+   (game updated) or the binary lost RED4ext's signature (`allow-unsigned-executable-memory`; fix with
+   `red4ext/macos/scripts/install_macos.sh`).
+2. Stages `Scripts` only of plugins that pass `red4ext/bin/red4ext_plugin_check` and are not ignored in
+   `red4ext/config.ini`, then compiles with `engine/tools/scc` (stops on errors).
+3. Merges `r6/input` key bindings with `engine/tools/inputloader.pl`, run from the game folder.
+4. Starts the game with `DYLD_INSERT_LIBRARIES=red4ext/RED4ext.dylib` and unstages plugin scripts after exit.
+
+A refusal is a non-zero exit; `GameLauncher.exitReport` then shows the script's output. Stopping the game from the
+app sends SIGTERM to the game (the script's child) so the script still cleans up.
 
 ## Security Model
 
 ### No Privileged Helper
 
 The app runs unsandboxed as the user and launches the game itself; there is no daemon or XPC service.
-`DYLD_INSERT_LIBRARIES` injection works because the game binary carries RED4ext's entitlements
-(`allow-dyld-environment-variables`, `disable-library-validation`, `allow-unsigned-executable-memory`).
-`GameLauncher` checks them before every launch and fails with the re-sign command if they are missing.
+`DYLD_INSERT_LIBRARIES` injection works because RED4ext's installer re-signs the game binary with its entitlements.
+`launch_red4ext.sh` checks that before every launch; the app never re-signs anything.
 
 ### API Key Storage
 

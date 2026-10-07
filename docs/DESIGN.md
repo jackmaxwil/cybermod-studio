@@ -190,8 +190,8 @@ The GameBridge manages game launching and runtime communication.
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                    GameLauncher                         │   │
-│  │  • Environment setup (DYLD_INSERT_LIBRARIES)            │   │
-│  │  • Process spawning via Process API                     │   │
+│  │  • Runs <game>/launch_red4ext.sh (pre-flight, gate,     │   │
+│  │    scc, inputloader, DYLD_INSERT_LIBRARIES)             │   │
 │  │  • Launch configuration (args, env vars)                │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                           │                                     │
@@ -219,64 +219,9 @@ The GameBridge manages game launching and runtime communication.
 
 ```swift
 public actor GameLauncher {
-    private let configuration: GameConfiguration
-    private let processMonitor: ProcessMonitor
-    private var activeSession: GameSession?
-    
-    public func launch(
-        profile: ModProfile,
-        options: LaunchOptions = .default
-    ) async throws -> GameSession {
-        // Verify game path
-        guard FileManager.default.fileExists(atPath: configuration.executablePath.path) else {
-            throw GameLaunchError.gameNotFound
-        }
-        
-        // Build environment
-        var environment = ProcessInfo.processInfo.environment
-        
-        // Inject RED4ext and required dylibs
-        var dylibs: [URL] = [configuration.red4extPath]
-        
-        if options.enableDebugAgent {
-            dylibs.append(configuration.debugAgentPath)
-        }
-        
-        environment["DYLD_INSERT_LIBRARIES"] = dylibs
-            .map(\.path)
-            .joined(separator: ":")
-        
-        environment["DYLD_FORCE_FLAT_NAMESPACE"] = "1"
-        
-        // Apply profile-specific env vars
-        for (key, value) in profile.environmentVariables {
-            environment[key] = value
-        }
-        
-        // Launch process
-        let process = Process()
-        process.executableURL = configuration.executablePath
-        process.arguments = options.launchArguments
-        process.environment = environment
-        
-        try process.run()
-        
-        // Create session
-        let session = GameSession(
-            id: UUID(),
-            pid: process.processIdentifier,
-            profile: profile,
-            startedAt: Date(),
-            process: process
-        )
-        
-        activeSession = session
-        
-        // Start monitoring
-        await processMonitor.track(session)
-        
-        return session
-    }
+    /// Runs <game>/launch_red4ext.sh from the game folder with the profile's args and env.
+    /// The script does every pre-launch check; the app only tracks the process and its log.
+    public func launch(profile: ModProfile, options: LaunchOptions = .default) async throws -> GameSession
 }
 
 public struct GameSession: Identifiable, Sendable {
@@ -618,9 +563,8 @@ The main application runs with minimal entitlements:
 - `com.apple.security.files.user-selected.read-write` - User-selected files
 - `com.apple.security.network.client` - Nexus API access
 
-There is no privileged helper. Studio launches the game as the user with `DYLD_INSERT_LIBRARIES` set to
-RED4ext; this works because the game binary carries RED4ext's entitlements, which `GameLauncher` verifies
-before launch (it never re-signs).
+There is no privileged helper. Studio runs RED4ext's `launch_red4ext.sh` as the user; the script refuses to
+start if the game binary lost RED4ext's signature or does not match the address DB. The app never re-signs.
 
 ### 5.2 Secrets Management
 
