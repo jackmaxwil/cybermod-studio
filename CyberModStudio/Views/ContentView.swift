@@ -1,6 +1,7 @@
 // ContentView.swift - Main content view with navigation
 
 import SwiftUI
+import CyberModCore
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
@@ -398,9 +399,6 @@ struct DebugStudioView: View {
 struct InstallModSheet: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
-    @State private var selectedFile: URL?
-    @State private var showFomodWizard = false
-    @State private var fomodSessionId: UUID?
     @State private var isInstalling = false
     
     var body: some View {
@@ -423,7 +421,6 @@ struct InstallModSheet: View {
                         panel.canChooseDirectories = false
                         
                         if panel.runModal() == .OK, let url = panel.url {
-                            selectedFile = url
                             Task {
                                 await installMod(from: url)
                             }
@@ -435,11 +432,6 @@ struct InstallModSheet: View {
         }
         .padding(40)
         .frame(width: 500, height: 300)
-        .sheet(isPresented: $showFomodWizard) {
-            if let sessionId = fomodSessionId {
-                FomodInstallerSheet(sessionId: sessionId)
-            }
-        }
     }
     
     private func installMod(from url: URL) async {
@@ -447,18 +439,7 @@ struct InstallModSheet: View {
         defer { isInstalling = false }
         
         do {
-            let source = ModSource.local(url: url)
-            let result = try await appState.modManager.install(source)
-            
-            // Check if FOMOD wizard is needed
-            // This would be detected during installation
-            // For now, just dismiss
-            dismiss()
-        } catch ModManagerError.fomodRequired(let config) {
-            // Create FOMOD session and show wizard
-            // This is a simplified version - in reality, we'd need to create the session
-            // with the extracted mod directory
-            // showFomodWizard = true
+            _ = try await appState.modManager.install(.local(url: url))
             dismiss()
         } catch {
             print("Installation failed: \(error)")

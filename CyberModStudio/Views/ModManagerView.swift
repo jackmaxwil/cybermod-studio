@@ -211,8 +211,8 @@ struct ModDetailView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    if let version = mod.version, version != "1.0.0" {
-                        Text("Version \(version)")
+                    if mod.version != "1.0.0" {
+                        Text("Version \(mod.version)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
