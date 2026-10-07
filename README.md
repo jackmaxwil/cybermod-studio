@@ -1,78 +1,55 @@
 # CyberMod Studio
 
-A macOS app (plus a `cybermod` command-line tool) for installing Cyberpunk 2077 mods and starting the game with
-[RED4ext for macOS](https://github.com/jackmaxwil/RED4ext-macos). It does not replace RED4ext: launching always goes through
-RED4ext's own `launch_red4ext.sh` in your game folder.
+Mods for **Cyberpunk 2077 on Mac** (Steam, Apple silicon). `cybermod` installs the mod loader
+([RED4ext for macOS](https://github.com/jackmaxwil/RED4ext-macos), with TweakXL, ArchiveXL and ModMenu), puts mods where
+the game finds them, and starts the game with mods.
 
-## Requirements
-
-- Apple Silicon Mac, macOS 14 or newer
-- Xcode 16 or newer (to build the app)
-- Cyberpunk 2077 from Steam, macOS version
-- RED4ext macOS release installed in the game folder (you should have `launch_red4ext.sh` next to `Cyberpunk2077.app`)
-- For `.archive` mods: **ArchiveXL** (`red4ext/plugins/ArchiveXL/`). On macOS the game does not load
-  `archive/pc/mod` by itself; ArchiveXL does.
-- For tweak mods (`r6/tweaks`): **TweakXL** (`red4ext/plugins/TweakXL/`)
-
-## Build and install the app
+## Install
 
 ```bash
-git clone https://github.com/jackmaxwil/cybermod-studio.git
-cd cybermod-studio
-xcodebuild -project CyberModStudio.xcodeproj -scheme CyberModStudio -configuration Release \
-  -destination 'platform=macOS' -derivedDataPath build build
-cp -R "build/Build/Products/Release/CyberMod Studio.app" /Applications/
+curl -fsSL https://raw.githubusercontent.com/jackmaxwil/cybermod-studio/main/install.sh | bash
 ```
 
-Optional command-line tool: `swift build -c release`, then use `.build/release/cybermod`.
-
-## First run
-
-1. Open **CyberMod Studio** from Applications.
-2. It creates a profile called "Default" pointing at
-   `~/Library/Application Support/Steam/steamapps/common/Cyberpunk 2077`. If your game is somewhere else, see
-   Troubleshooting.
-3. Start Steam and sign in (otherwise the game has no saves).
-4. **Mod Manager** → Install → pick a mod `.zip`. Files go where the game expects them:
-
-   | Mod file | Goes to | Needs |
-   |----------|---------|-------|
-   | `.archive`, `.archive.xl` | `archive/pc/mod/` | ArchiveXL |
-   | `.yaml` / `.yml` tweaks | `r6/tweaks/` | TweakXL |
-   | `.reds` scripts | `r6/scripts/` | nothing extra |
-   | RED4ext plugin `.dylib` | `red4ext/plugins/<Name>/` | macOS build only (Windows `.dll` will not work) |
-
-5. **Game Runner** → Launch. Output goes to `~/Library/Logs/CyberModStudio/game.log`.
-
-## Troubleshooting
-
-- **If launch says "RED4ext is not installed"**, install a RED4ext macOS release into the game folder.
-- **If the launch stops with "The game was updated to a build this RED4ext release does not support yet"**, wait for
-  a RED4ext release for the new game version. Steam's Play button still starts the game without mods.
-- **If it says "The game binary is not set up for RED4ext"** (Steam updated or verified the game), run
-  `"<game folder>/red4ext/macos/scripts/install_macos.sh"` once, then launch again.
-- **If it says "REDscript compilation failed"**, open `~/Library/Logs/CyberModStudio/game.log`, find the `.reds` file
-  named in the `[ERROR` lines and remove or update that mod.
-- **If the log says "Not compiling X's scripts"**, RED4ext will not load plugin X for this game version; update the
-  plugin.
-- **If an `.archive` mod does nothing**, install ArchiveXL.
-- **If "Steam is not running"** appears or saves are missing, start Steam and sign in, then launch again.
-- **If your game is not in the default Steam folder**, point the profile at it once:
-  `.build/release/cybermod profile create Game --game-path "/path/to/Cyberpunk 2077"` then
-  `.build/release/cybermod profile activate Game`.
-- **If the game crashes**, check `~/Library/Logs/DiagnosticReports/Cyberpunk2077*.ips` and `<game folder>/red4ext/logs/`.
-
-## Build from source (developers)
+## Use
 
 ```bash
-swift build          # core library + cybermod CLI
-swift test           # unit tests
-xcodebuild -project CyberModStudio.xcodeproj -scheme CyberModStudio -configuration Release \
-  -destination 'platform=macOS' -derivedDataPath build build   # the app
+cybermod install                                  # install the mod loader into your game (once)
+cybermod mod add github:owner/repo                # a mod from GitHub (newest release)
+cybermod mod add ~/Downloads/SomeMod.zip          # a mod you downloaded (.zip, .7z, .rar or a folder)
+cybermod mod add https://www.nexusmods.com/cyberpunk2077/mods/1234   # a mod from Nexus Mods (see below)
+cybermod mod list                                 # what is installed
+cybermod mod disable some-mod                     # switch a mod off (and back on with: mod enable)
+cybermod mod remove some-mod                      # delete exactly the files that mod installed
+cybermod doctor                                   # check that everything is set up (changes nothing)
+cybermod play                                     # start the game with mods (start Steam first)
 ```
 
-CI (`.github/workflows/build-macos.yml`) runs the same commands. The Xcode project is generated from `project.yml`
-with [xcodegen](https://github.com/yonaskolb/XcodeGen); run `xcodegen` after adding or removing app source files.
+Steam's Play button still starts the game **without** mods.
 
-Layout: `Sources/CyberModCore` (logic), `Sources/CyberModCLI` (CLI), `CyberModStudio/` (SwiftUI app),
-`docs/` (design notes).
+**Nexus Mods:** copy your personal API key from
+[nexusmods.com/users/myaccount?tab=api](https://www.nexusmods.com/users/myaccount?tab=api) and run
+`cybermod config set nexus.api-key` once (it is kept in your Keychain). Premium members get direct downloads. Everyone
+else: `cybermod mod add nexus:1234` opens the mod's download page; click **Mod Manager Download**, copy the `nxm://`
+link the browser offers, and run `cybermod mod add 'nxm://...'`.
+
+**Mods you installed by hand:** `cybermod mod adopt` tracks them so `disable` and `remove` work too.
+
+**Your game is not in the default Steam folder?** `cybermod config set game-dir "/path/to/Cyberpunk 2077"`.
+
+**After a game update** `cybermod doctor` tells you whether to wait for a new loader release (`cybermod update`) or
+to re-run the setup (`cybermod doctor --fix rerun-setup`).
+
+Every command explains what to do next when something is wrong. `cybermod help <command>` shows all options;
+[docs/CLI.md](docs/CLI.md) has the details (where files go, updates, load order, JSON output).
+
+## Build from source
+
+```bash
+swift build -c release && .build/release/cybermod --help     # the command-line tool
+swift test                                                   # unit tests (never touch your game folder)
+xcodebuild -project CyberModStudio.xcodeproj -scheme CyberModStudio -configuration Release \
+  -destination 'platform=macOS' -derivedDataPath build build # the CyberMod Studio app
+```
+
+Layout: `Sources/CyberModKit` (all logic), `Sources/CyberModCLI` (`cybermod`), `CyberModStudio/` (the app, still on the
+older `Sources/CyberModCore`), `docs/`. Releases: push a `vX.Y.Z` tag (see `.github/workflows/release.yml`).

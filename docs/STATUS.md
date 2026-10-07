@@ -6,9 +6,14 @@
 
 ## What's complete
 
+### cybermod CLI / CyberModKit (see docs/CLI.md)
+- [x] Loader: install/update/uninstall the RED4ext macOS release (SHA256SUMS, build check, install_macos.sh), play
+- [x] Mods: add from path/zip/7z/rar, https, GitHub, Nexus (premium + nxm://), registry; list/info/remove/enable/disable
+- [x] adopt hand-installed mods, outdated/update, archive load order, doctor with fixes, JSON output
+- [x] install.sh + release workflow
+
 ### Infrastructure
 - [x] `CyberModCore` SPM package builds (all dependencies resolved)
-- [x] `CyberModCLI` implements `list`, `install`, `uninstall`, `enable`, `disable`, `profile`, `launch`
 - [x] `CyberModStudio.xcodeproj` generated via xcodegen, depends on CyberModCore
 - [x] SQLite database (GRDB) with migrations for mods, profiles, deployed files
 
