@@ -117,7 +117,6 @@ class AppState: ObservableObject {
             lastError = nil
             do {
                 let profile = try await modManager.getActiveProfile()
-                await gameLauncher.configure(gamePath: profile.gamePath)
                 let session = try await gameLauncher.launch(profile: profile)
                 activeSession = session
                 isGameRunning = true

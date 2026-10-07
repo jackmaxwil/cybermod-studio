@@ -332,9 +332,6 @@ struct LaunchCommand: AsyncParsableCommand {
         abstract: "Launch Cyberpunk 2077"
     )
     
-    @Flag(name: .shortAndLong, help: "Enable debug agent for runtime inspection")
-    var debug = false
-    
     func run() async throws {
         let database = ModDatabase.shared
         try await database.initialize()
@@ -349,17 +346,11 @@ struct LaunchCommand: AsyncParsableCommand {
         print("Game path: \(profile.gamePath.path)")
         
         let launcher = GameLauncher.shared
-        await launcher.configure(gamePath: profile.gamePath)
-        
-        let options = LaunchOptions(enableDebugAgent: debug)
         
         do {
-            let session = try await launcher.launch(profile: profile, options: options)
-            print("✓ Game launched (PID: \(session.pid))")
-            print("Game output: \(session.logURL.path)")
-            for line in session.skippedScripts {
-                print("Scripts not staged, \(line)")
-            }
+            let session = try await launcher.launch(profile: profile)
+            print("✓ launch_red4ext.sh started (PID: \(session.pid))")
+            print("Launcher and game output: \(session.logURL.path)")
             print("\nPress Ctrl+C to exit (game will continue running)")
             
             // Wait for game to exit

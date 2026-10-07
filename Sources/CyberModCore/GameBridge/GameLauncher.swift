@@ -12,12 +12,6 @@ public actor GameLauncher {
     private var activeSession: GameSession?
     private var processMonitor: ProcessMonitor?
     
-    // MARK: - Configuration
-    
-    private var gamePath: URL?
-    private var red4extPath: URL?
-    private var debugAgentPath: URL?
-    
     // MARK: - Singleton
     
     public static let shared = GameLauncher()
@@ -28,79 +22,46 @@ public actor GameLauncher {
         self.logger = Logger(label: "com.cybermod.gamelauncher")
     }
     
-    // MARK: - Configuration
-    
-    /// Configure game paths
-    public func configure(
-        gamePath: URL,
-        red4extPath: URL? = nil,
-        debugAgentPath: URL? = nil
-    ) {
-        self.gamePath = gamePath
-        self.red4extPath = red4extPath ?? gamePath.appendingPathComponent("red4ext/RED4ext.dylib")
-        self.debugAgentPath = debugAgentPath ?? gamePath.appendingPathComponent("red4ext/DebugAgent.dylib")
-    }
-    
     // MARK: - Launch
     
-    /// Launch the game with the given profile
+    /// Launch the game with the given profile by running RED4ext's `launch_red4ext.sh` from the game folder.
+    /// The script owns every pre-launch step, so the app never diverges from it: it refuses a game binary whose UUID
+    /// does not match the address DB or that lost RED4ext's signature, stages only plugin Scripts that pass
+    /// `red4ext_plugin_check`, compiles with scc, merges r6/input key bindings (inputloader.pl, run from the game
+    /// folder), starts the game with RED4ext and unstages the plugin Scripts once the game exits.
+    /// A refusal shows up as a non-zero exit; `exitReport` then includes the launcher's output.
     public func launch(
         profile: ModProfile,
         options: LaunchOptions = .default
     ) async throws -> GameSession {
-        // Check if already running
         if let session = activeSession, session.isRunning {
             throw GameLaunchError.alreadyRunning
         }
         
-        // Verify game path
-        let executablePath = profile.gamePath
-            .appendingPathComponent("Cyberpunk2077.app/Contents/MacOS/Cyberpunk2077")
-        
+        let gamePath = profile.gamePath
+        let executablePath = gamePath.appendingPathComponent("Cyberpunk2077.app/Contents/MacOS/Cyberpunk2077")
         guard FileManager.default.fileExists(atPath: executablePath.path) else {
             throw GameLaunchError.gameNotFound(expectedPath: executablePath)
         }
-        
-        let red4ext = red4extPath ?? profile.gamePath.appendingPathComponent("red4ext/RED4ext.dylib")
-        guard FileManager.default.fileExists(atPath: red4ext.path) else {
-            throw GameLaunchError.injectionFailed(dylib: red4ext, reason: "RED4ext.dylib is not installed")
+        let script = gamePath.appendingPathComponent("launch_red4ext.sh")
+        guard FileManager.default.fileExists(atPath: script.path) else {
+            throw GameLaunchError.launcherNotFound(expectedPath: script)
         }
         
-        try verifyEntitlements(executablePath)
-        
-        // Build environment
         var environment = ProcessInfo.processInfo.environment
-        
-        // Collect dylibs to inject
-        var dylibsToInject = [red4ext]
-        
-        if options.enableDebugAgent, let debugAgent = debugAgentPath,
-           FileManager.default.fileExists(atPath: debugAgent.path) {
-            dylibsToInject.append(debugAgent)
-        }
-        
-        // Set DYLD environment variables (same as launch_red4ext.sh)
-        environment["DYLD_INSERT_LIBRARIES"] = dylibsToInject.map(\.path).joined(separator: ":")
-        logger.debug("Injecting dylibs: \(dylibsToInject.map(\.lastPathComponent))")
-        
-        // Apply profile environment variables
         for (key, value) in profile.settings.environmentVariables {
             environment[key] = value
         }
-        
-        // Build arguments
         var arguments = options.launchArguments
-        
         if profile.settings.skipIntroVideos {
             arguments.append("-skipStartScreen")
         }
         
-        // Create and configure process
         let process = Process()
-        process.executableURL = executablePath
-        process.arguments = arguments
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = [script.path] + arguments
         process.environment = environment
-        process.currentDirectoryURL = profile.gamePath
+        process.currentDirectoryURL = gamePath
         
         // stdout/stderr go to a file: an undrained pipe blocks the game once its buffer fills.
         let logURL = FileManager.default.homeDirectoryForCurrentUser
@@ -118,43 +79,29 @@ public actor GameLauncher {
         process.standardOutput = log
         process.standardError = log
         
-        // Stage plugin scripts, compile and launch. Any failure from here on unstages the scripts again.
-        let gamePath = profile.gamePath
-        let skippedScripts: [String]
+        logger.info("Running \(script.path)")
         do {
-            skippedScripts = try compileScripts(gamePath: gamePath)
-            logger.info("Launching Cyberpunk 2077 from \(executablePath.path)")
             try process.run()
         } catch {
-            Self.cleanupScripts(gamePath: gamePath, logger: logger)
-            throw error as? GameLaunchError ?? GameLaunchError.launchFailed(reason: error.localizedDescription)
+            throw GameLaunchError.launchFailed(reason: error.localizedDescription)
         }
         
-        // Create session
         let session = GameSession(
             id: UUID(),
             pid: process.processIdentifier,
             profile: profile,
             startedAt: Date(),
             process: process,
-            logURL: logURL,
-            skippedScripts: skippedScripts
+            logURL: logURL
         )
-        
         activeSession = session
-        session.cleanup = Task.detached { [logger] in
-            process.waitUntilExit()
-            Self.cleanupScripts(gamePath: gamePath, logger: logger)
-        }
         
-        // Start monitoring
         processMonitor = ProcessMonitor(session: session)
         Task {
             await processMonitor?.startMonitoring()
         }
         
-        logger.info("Game launched with PID: \(session.pid)")
-        
+        logger.info("Launcher started with PID: \(session.pid)")
         return session
     }
     
@@ -166,7 +113,8 @@ public actor GameLauncher {
         
         logger.info("Terminating game (PID: \(session.pid))")
         
-        session.process.terminate()
+        // Stop the game, the launcher script's child; the script then unstages plugin Scripts and exits.
+        _ = try? Self.run(URL(fileURLWithPath: "/usr/bin/pkill"), ["-TERM", "-P", String(session.pid)])
         session.process.waitUntilExit()
         
         activeSession = nil
@@ -183,79 +131,6 @@ public actor GameLauncher {
     /// Get the current game session
     public func getActiveSession() -> GameSession? {
         activeSession
-    }
-    
-    // MARK: - Pre-launch checks
-    
-    /// Entitlements RED4ext needs on the game binary (RED4ext scripts/red4ext_entitlements.plist).
-    static let requiredEntitlements = [
-        "com.apple.security.cs.allow-dyld-environment-variables",
-        "com.apple.security.cs.disable-library-validation",
-        "com.apple.security.cs.allow-unsigned-executable-memory",
-    ]
-    
-    /// Fails if the binary (e.g. restored by a Steam "Verify integrity") lacks the entitlements. Never re-signs.
-    private func verifyEntitlements(_ executable: URL) throws {
-        let result = try Self.run(URL(fileURLWithPath: "/usr/bin/codesign"),
-                             ["-d", "--entitlements", ":-", executable.path], mergeStderr: false)
-        let plist = (try? PropertyListSerialization.propertyList(from: result.output, format: nil)) as? [String: Any] ?? [:]
-        let missing = Self.requiredEntitlements.filter { plist[$0] as? Bool != true }
-        if !missing.isEmpty {
-            throw GameLaunchError.missingEntitlements(executable: executable, missing: missing)
-        }
-    }
-    
-    /// Stages the Scripts of plugins RED4ext will load into r6/scripts/zz_red4ext_plugins and compiles with scc,
-    /// like launch_red4ext.sh. Returns the plugins whose Scripts were skipped, with the reason.
-    private func compileScripts(gamePath: URL) throws -> [String] {
-        let fm = FileManager.default
-        let stage = gamePath.appendingPathComponent("r6/scripts/zz_red4ext_plugins")
-        try? fm.removeItem(at: stage)
-        let gate = PluginGate.evaluate(gamePath: gamePath)
-        for plugin in gate.allowed {
-            try fm.createDirectory(at: stage, withIntermediateDirectories: true)
-            try fm.copyItem(at: plugin.appendingPathComponent("Scripts"),
-                            to: stage.appendingPathComponent(plugin.lastPathComponent))
-        }
-        let skipped = gate.skipped.map { "\($0.name): \($0.reason)" }
-        for line in skipped {
-            logger.warning("Not staging Scripts of \(line)")
-        }
-        
-        let scc = gamePath.appendingPathComponent("engine/tools/scc")
-        if fm.isExecutableFile(atPath: scc.path) {
-            let output = String(decoding: try Self.run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path]).output,
-                                as: UTF8.self)
-            logger.info("scc: \(output.split(separator: "\n").suffix(3).joined(separator: "\n"))")
-            if output.contains("Compilation failed") {
-                let errors = Self.errorBlocks(output)
-                throw GameLaunchError.scriptCompilationFailed(output: errors.isEmpty ? output : errors)
-            }
-        }
-        
-        // Process input mappings (best effort, as in launch_red4ext.sh)
-        let inputLoader = gamePath.appendingPathComponent("engine/tools/inputloader.pl")
-        if fm.isExecutableFile(atPath: inputLoader.path) {
-            _ = try? Self.run(inputLoader, [])
-        }
-        return skipped
-    }
-    
-    /// Removes the staged plugin scripts and recompiles, so the script cache no longer declares the plugins' natives.
-    /// Otherwise a later launch without RED4ext (e.g. from Steam) stops with "Failed to initialize scripts data!".
-    static func cleanupScripts(gamePath: URL, logger: Logger) {
-        try? FileManager.default.removeItem(at: gamePath.appendingPathComponent("r6/scripts/zz_red4ext_plugins"))
-        let scc = gamePath.appendingPathComponent("engine/tools/scc")
-        guard FileManager.default.isExecutableFile(atPath: scc.path),
-              let result = try? run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path]) else { return }
-        logger.debug("scc after unstaging plugin scripts: \(String(decoding: result.output, as: UTF8.self))")
-    }
-    
-    /// The "[ERROR" lines of scc output with the 3 lines after each, at most 40 lines (as launch_red4ext.sh shows them).
-    static func errorBlocks(_ output: String) -> String {
-        let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
-        let keep = Set(lines.indices.filter { lines[$0].hasPrefix("[ERROR") }.flatMap { $0...min($0 + 3, lines.count - 1) })
-        return keep.sorted().prefix(40).map { String(lines[$0]) }.joined(separator: "\n")
     }
     
     private static func run(_ executable: URL, _ arguments: [String], mergeStderr: Bool = true) throws -> (status: Int32, output: Data) {
@@ -275,7 +150,6 @@ public actor GameLauncher {
     
     /// Crash reports written since the session started, plus the tail of the newest red4ext log.
     public func exitReport(for session: GameSession, tailLines: Int = 40) async -> String {
-        await session.cleanup?.value
         let fm = FileManager.default
         let reportsDir = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/DiagnosticReports")
         func newFiles(in dir: URL, where match: (String) -> Bool) -> [URL] {
@@ -298,8 +172,15 @@ public actor GameLauncher {
         }
         
         var report = "Game output: \(session.logURL.path)\n"
-        if !session.skippedScripts.isEmpty {
-            report += "Plugin Scripts not staged:\n" + session.skippedScripts.map { "  \($0)" }.joined(separator: "\n") + "\n"
+        let output = (try? String(contentsOf: session.logURL, encoding: .utf8)) ?? ""
+        let skipped = output.split(separator: "\n").filter { $0.hasPrefix("Not compiling") }
+        if !skipped.isEmpty {
+            report += skipped.joined(separator: "\n") + "\n"
+        }
+        // A non-zero exit can be the launcher refusing to start (game updated, binary not re-signed, scc errors).
+        if let code = session.exitCode, code != 0 {
+            let tail = output.split(separator: "\n", omittingEmptySubsequences: false).suffix(tailLines)
+            report += "Launcher/game output (last \(tailLines) lines):\n" + tail.joined(separator: "\n") + "\n"
         }
         report += crashes.isEmpty
             ? "No new crash reports."
@@ -328,12 +209,8 @@ public class GameSession: @unchecked Sendable {
     
     /// File receiving the game's stdout and stderr.
     public let logURL: URL
-    /// "plugin: reason" for each plugin whose Scripts were not staged because RED4ext would refuse it.
-    public let skippedScripts: [String]
     
     internal let process: Process
-    /// Unstages plugin scripts and recompiles once the game exits.
-    internal var cleanup: Task<Void, Never>?
     
     private var _status: GameSessionStatus = .running
     public var status: GameSessionStatus {
@@ -347,8 +224,7 @@ public class GameSession: @unchecked Sendable {
         profile: ModProfile,
         startedAt: Date,
         process: Process,
-        logURL: URL,
-        skippedScripts: [String] = []
+        logURL: URL
     ) {
         self.id = id
         self.pid = pid
@@ -356,7 +232,6 @@ public class GameSession: @unchecked Sendable {
         self.startedAt = startedAt
         self.process = process
         self.logURL = logURL
-        self.skippedScripts = skippedScripts
     }
     
     /// Whether the game is still running
@@ -429,17 +304,13 @@ actor ProcessMonitor {
 
 /// Options for launching the game
 public struct LaunchOptions: Sendable {
+    /// Passed through launch_red4ext.sh to the game.
     public var launchArguments: [String]
-    public var enableDebugAgent: Bool
     
-    public static let `default` = LaunchOptions(
-        launchArguments: [],
-        enableDebugAgent: false
-    )
+    public static let `default` = LaunchOptions()
     
-    public init(launchArguments: [String] = [], enableDebugAgent: Bool = false) {
+    public init(launchArguments: [String] = []) {
         self.launchArguments = launchArguments
-        self.enableDebugAgent = enableDebugAgent
     }
 }
 
@@ -450,10 +321,8 @@ public enum GameLaunchError: LocalizedError {
     case gameNotFound(expectedPath: URL)
     case alreadyRunning
     case notRunning
+    case launcherNotFound(expectedPath: URL)
     case launchFailed(reason: String)
-    case injectionFailed(dylib: URL, reason: String)
-    case missingEntitlements(executable: URL, missing: [String])
-    case scriptCompilationFailed(output: String)
     
     public var errorDescription: String? {
         switch self {
@@ -465,17 +334,8 @@ public enum GameLaunchError: LocalizedError {
             return "Game is not running"
         case .launchFailed(let reason):
             return "Failed to launch game: \(reason)"
-        case .injectionFailed(let dylib, let reason):
-            return "Failed to inject \(dylib.lastPathComponent): \(reason)"
-        case .missingEntitlements(let executable, let missing):
-            return """
-            The game binary is missing entitlements RED4ext needs (\(missing.joined(separator: ", "))). \
-            A Steam "Verify integrity" or update restores the stock binary. Re-sign it with RED4ext's plist:
-              codesign -f -s - -o runtime --entitlements RED4ext/scripts/red4ext_entitlements.plist "\(executable.path)"
-            (or: RED4ext/scripts/codesign_macos.sh exe "\(executable.path)")
-            """
-        case .scriptCompilationFailed(let output):
-            return "REDscript compilation (scc) failed:\n\(output)"
+        case .launcherNotFound(let path):
+            return "RED4ext is not installed: \(path.path) is missing. Install a RED4ext macOS release into the game folder."
         }
     }
 }
