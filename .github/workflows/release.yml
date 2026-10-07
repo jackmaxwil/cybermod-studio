@@ -1,0 +1,70 @@
+name: release
+
+# Tag vX.Y.Z or vX.Y.Z-rcN to publish; versions with "-" are prereleases.
+# Actions > release > Run workflow builds everything without publishing (dry run) and keeps the files as an artifact.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to stamp into the dry-run build
+        default: 0.0.0-dryrun
+      dry_run:
+        description: Build only, do not create a release
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+      PUBLISH: ${{ github.event_name == 'push' || !inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        run: |
+          VERSION="${VERSION#v}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Bad version: $VERSION"; exit 1; }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          sed -i '' "s/^public let cybermodVersion = .*/public let cybermodVersion = \"$VERSION\"/" Sources/CyberModKit/Kit.swift
+
+      - name: Test
+        run: swift test
+
+      - name: Build CLI
+        run: |
+          swift build -c release --arch arm64 --product cybermod
+          mkdir -p dist
+          BIN="$(swift build -c release --arch arm64 --show-bin-path)/cybermod"
+          "$BIN" --version | grep -qx "$VERSION"
+          tar -czf "dist/cybermod-$VERSION-macos-arm64.tar.gz" -C "$(dirname "$BIN")" cybermod
+
+      - name: Build app
+        run: |
+          xcodebuild -project CyberModStudio.xcodeproj -scheme CyberModStudio -configuration Release \
+            -destination 'platform=macOS,arch=arm64' -derivedDataPath build MARKETING_VERSION="${VERSION%%-*}" build
+          ditto -c -k --keepParent "build/Build/Products/Release/CyberMod Studio.app" "dist/CyberModStudio-$VERSION-macos-arm64.zip"
+
+      - name: Checksums
+        run: cd dist && shasum -a 256 *.tar.gz *.zip > SHA256SUMS && cat SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cybermod-${{ env.VERSION }}
+          path: dist/
+
+      - name: Publish
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRE=""
+          [[ "$VERSION" == *-* ]] && PRE=--prerelease
+          gh release create "v$VERSION" dist/* install.sh $PRE --title "CyberMod Studio $VERSION" --verify-tag \
+            --notes "Install the cybermod command-line tool: \`curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash\`"
