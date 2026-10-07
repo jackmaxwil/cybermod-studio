@@ -91,8 +91,16 @@ class AppState: ObservableObject {
     let database = ModDatabase.shared
     
     init() {
-        Task {
+        Task { [modManager] in
             try? await database.initialize()
+            // First run: without an active profile nothing can install or launch. Use the Steam install location;
+            // other locations: `cybermod profile create <name> --game-path <dir>` + `cybermod profile activate <name>`.
+            if (try? await modManager.getActiveProfile()) == nil,
+               let profile = try? await modManager.createProfile(
+                   name: "Default",
+                   gamePath: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/Steam/steamapps/common/Cyberpunk 2077")) {
+                try? await modManager.setActiveProfile(profile)
+            }
         }
     }
     
