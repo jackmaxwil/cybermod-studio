@@ -117,8 +117,11 @@ enum GitHub {
 public enum Nexus {
     static let api = "https://api.nexusmods.com/v1/games/cyberpunk2077"
     public static let keyAccount = "nexus.api-key"
+    /// Message of the KitError `nexus:` sources throw for non-Premium accounts after opening the files page (its URL is
+    /// the first detail); the app then waits for the nxm:// link instead of showing an error.
+    public static let premiumOnly = "Nexus Mods gives direct downloads only to Premium members."
 
-    public struct User: Decodable { public var name: String; public var is_premium: Bool }
+    public struct User: Decodable, Sendable { public var name: String; public var is_premium: Bool }
     struct Mod: Decodable { var name: String?; var version: String?; var author: String? }
     struct File: Decodable { var file_id: Int; var version: String?; var category_name: String?; var is_primary: Bool?; var uploaded_timestamp: Int? }
     struct Files: Decodable { var files: [File] }

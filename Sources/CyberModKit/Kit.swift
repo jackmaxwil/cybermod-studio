@@ -7,7 +7,7 @@ import Foundation
 public let cybermodVersion = "0.1.0"
 
 /// A failure the user can act on: `message` says what happened, `hint` says what to do next.
-public struct KitError: LocalizedError, Equatable, Codable {
+public struct KitError: LocalizedError, Equatable, Codable, Sendable {
     enum CodingKeys: String, CodingKey { case message = "error", hint, details }
 
     public var message: String
@@ -124,6 +124,16 @@ public struct Config {
         guard keys.contains(key) else {
             throw KitError("Unknown setting \"\(key)\".", hint: "Known settings: \(keys.joined(separator: ", ")).")
         }
+    }
+
+    /// Sets a config.json setting and saves (an empty value removes it). Not for nexus.api-key (see `Secrets`).
+    public mutating func set(_ key: String, _ value: String) throws {
+        try Self.check(key: key)
+        if key == "registry.url", !value.isEmpty, !(value.hasPrefix("https://") || value.hasPrefix("file://")) {
+            throw KitError("registry.url must start with https:// or file://.", hint: "cybermod config set registry.url https://.../index.json")
+        }
+        values[key] = value.isEmpty ? nil : (key == "game-dir" ? (value as NSString).expandingTildeInPath : value)
+        try save()
     }
 }
 

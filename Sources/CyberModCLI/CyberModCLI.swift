@@ -471,12 +471,8 @@ struct ConfigSet: KitCommand {
             return
         }
         guard let value else { throw KitError("Missing value for \(key).", hint: "cybermod config set \(key) <value>") }
-        if key == "registry.url", !value.isEmpty, !(value.hasPrefix("https://") || value.hasPrefix("file://")) {
-            throw KitError("registry.url must start with https:// or file://.", hint: "cybermod config set registry.url https://.../index.json")
-        }
         var config = Config(home: kit.home)
-        config.values[key] = value.isEmpty ? nil : (key == "game-dir" ? (value as NSString).expandingTildeInPath : value)
-        try config.save()
+        try config.set(key, value)
         global.emit(config.values) { print(value.isEmpty ? "Removed \(key)." : "\(key) = \(config.values[key]!)") }
     }
 }

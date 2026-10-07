@@ -31,7 +31,7 @@ public struct BundleRecord: Codable {
     public var installedAt: Date
 }
 
-public struct LoaderReport: Codable {
+public struct LoaderReport: Codable, Sendable {
     public var action: String
     public var version: String?
     public var files: Int

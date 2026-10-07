@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct RegistryEntry: Codable, Equatable {
+public struct RegistryEntry: Codable, Equatable, Sendable {
     public var id: String
     public var name: String
     public var version: String
@@ -16,7 +16,7 @@ public struct RegistryEntry: Codable, Equatable {
     public var requires: [String]?
 }
 
-public struct RegistryIndex: Codable, Equatable {
+public struct RegistryIndex: Codable, Equatable, Sendable {
     public var schema: Int
     public var mods: [RegistryEntry]
 

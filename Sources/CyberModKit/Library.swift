@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct UpdateInfo: Codable, Equatable {
+public struct UpdateInfo: Codable, Equatable, Sendable {
     public var id: String
     public var installed: String?
     /// Newest version at the source, or nil when the check failed (`error` says why).
@@ -64,7 +64,7 @@ extension ModStore {
 
 // MARK: - Load order
 
-public struct ArchiveEntry: Codable, Equatable {
+public struct ArchiveEntry: Codable, Equatable, Sendable {
     /// 1 loads first and wins every file it shares with later archives.
     public var rank: Int
     public var file: String
@@ -72,7 +72,7 @@ public struct ArchiveEntry: Codable, Equatable {
     public var mod: String?
 }
 
-public struct Rename: Codable, Equatable {
+public struct Rename: Codable, Equatable, Sendable {
     public var from: String
     public var to: String
 }

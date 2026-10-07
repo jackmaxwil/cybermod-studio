@@ -164,7 +164,7 @@ extension ModSource {
             guard user.is_premium else {
                 let page = Nexus.filesPage(mod: mod, file: fileID)
                 if !kit.dryRun { kit.openURL(page) }
-                throw KitError("Nexus Mods gives direct downloads only to Premium members.",
+                throw KitError(Nexus.premiumOnly,
                                hint: "Open \(page.absoluteString) (cybermod opened it in your browser), click \"Mod Manager "
                                    + "Download\", then \"Slow download\". When the browser offers to open an nxm:// link, "
                                    + "copy the link instead and run: cybermod mod add 'nxm://...'",

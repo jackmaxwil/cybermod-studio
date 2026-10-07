@@ -2,8 +2,8 @@
 
 import Foundation
 
-public struct Finding: Codable, Equatable {
-    public enum Level: String, Codable { case ok, info, warning, error }
+public struct Finding: Codable, Equatable, Sendable {
+    public enum Level: String, Codable, Sendable { case ok, info, warning, error }
     public var level: Level
     /// Stable id of the check, e.g. "signature", "misplaced-xl" ("missing-files:<mod id>" per mod).
     public var id: String
@@ -15,13 +15,13 @@ public struct Finding: Codable, Equatable {
 }
 
 /// `winner` and `loser` both contain `files` of the same game files; `winner` loads first, so its copies are used.
-public struct ArchiveConflict: Codable, Equatable {
+public struct ArchiveConflict: Codable, Equatable, Sendable {
     public var winner: String
     public var loser: String
     public var files: Int
 }
 
-public struct DoctorReport: Codable {
+public struct DoctorReport: Codable, Sendable {
     public var game: String
     public var findings: [Finding]
     public var conflicts: [ArchiveConflict]

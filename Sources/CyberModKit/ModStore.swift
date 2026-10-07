@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct InstalledFile: Codable, Equatable {
+public struct InstalledFile: Codable, Equatable, Sendable {
     /// Path relative to the game folder.
     public var path: String
     public var sha256: String
@@ -10,7 +10,7 @@ public struct InstalledFile: Codable, Equatable {
     public var original: String?
 }
 
-public struct ModRecord: Codable, Equatable, Identifiable {
+public struct ModRecord: Codable, Equatable, Identifiable, Sendable {
     public var id: String
     public var name: String
     public var version: String?
@@ -23,12 +23,12 @@ public struct ModRecord: Codable, Equatable, Identifiable {
 }
 
 /// A file a mod wants that is already there. `owner` is a mod id, or nil for a file cybermod did not install.
-public struct Conflict: Codable, Equatable {
+public struct Conflict: Codable, Equatable, Sendable {
     public var path: String
     public var owner: String?
 }
 
-public struct InstallReport: Codable {
+public struct InstallReport: Codable, Sendable {
     public var mod: ModRecord
     public var ignored: [String]
     public var overwritten: [Conflict]
