@@ -67,9 +67,6 @@ public actor GameLauncher {
         }
         
         try verifyEntitlements(executablePath)
-        let skippedScripts = try compileScripts(gamePath: profile.gamePath)
-        
-        logger.info("Launching Cyberpunk 2077 from \(executablePath.path)")
         
         // Build environment
         var environment = ProcessInfo.processInfo.environment
@@ -121,11 +118,16 @@ public actor GameLauncher {
         process.standardOutput = log
         process.standardError = log
         
-        // Launch process
+        // Stage plugin scripts, compile and launch. Any failure from here on unstages the scripts again.
+        let gamePath = profile.gamePath
+        let skippedScripts: [String]
         do {
+            skippedScripts = try compileScripts(gamePath: gamePath)
+            logger.info("Launching Cyberpunk 2077 from \(executablePath.path)")
             try process.run()
         } catch {
-            throw GameLaunchError.launchFailed(reason: error.localizedDescription)
+            Self.cleanupScripts(gamePath: gamePath, logger: logger)
+            throw error as? GameLaunchError ?? GameLaunchError.launchFailed(reason: error.localizedDescription)
         }
         
         // Create session
@@ -140,6 +142,10 @@ public actor GameLauncher {
         )
         
         activeSession = session
+        session.cleanup = Task.detached { [logger] in
+            process.waitUntilExit()
+            Self.cleanupScripts(gamePath: gamePath, logger: logger)
+        }
         
         // Start monitoring
         processMonitor = ProcessMonitor(session: session)
@@ -190,7 +196,7 @@ public actor GameLauncher {
     
     /// Fails if the binary (e.g. restored by a Steam "Verify integrity") lacks the entitlements. Never re-signs.
     private func verifyEntitlements(_ executable: URL) throws {
-        let result = try run(URL(fileURLWithPath: "/usr/bin/codesign"),
+        let result = try Self.run(URL(fileURLWithPath: "/usr/bin/codesign"),
                              ["-d", "--entitlements", ":-", executable.path], mergeStderr: false)
         let plist = (try? PropertyListSerialization.propertyList(from: result.output, format: nil)) as? [String: Any] ?? [:]
         let missing = Self.requiredEntitlements.filter { plist[$0] as? Bool != true }
@@ -218,21 +224,41 @@ public actor GameLauncher {
         
         let scc = gamePath.appendingPathComponent("engine/tools/scc")
         if fm.isExecutableFile(atPath: scc.path) {
-            let result = try run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path])
-            guard result.status == 0 else {
-                throw GameLaunchError.scriptCompilationFailed(output: String(decoding: result.output, as: UTF8.self))
+            let output = String(decoding: try Self.run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path]).output,
+                                as: UTF8.self)
+            logger.info("scc: \(output.split(separator: "\n").suffix(3).joined(separator: "\n"))")
+            if output.contains("Compilation failed") {
+                let errors = Self.errorBlocks(output)
+                throw GameLaunchError.scriptCompilationFailed(output: errors.isEmpty ? output : errors)
             }
         }
         
         // Process input mappings (best effort, as in launch_red4ext.sh)
         let inputLoader = gamePath.appendingPathComponent("engine/tools/inputloader.pl")
         if fm.isExecutableFile(atPath: inputLoader.path) {
-            _ = try? run(inputLoader, [])
+            _ = try? Self.run(inputLoader, [])
         }
         return skipped
     }
     
-    private func run(_ executable: URL, _ arguments: [String], mergeStderr: Bool = true) throws -> (status: Int32, output: Data) {
+    /// Removes the staged plugin scripts and recompiles, so the script cache no longer declares the plugins' natives.
+    /// Otherwise a later launch without RED4ext (e.g. from Steam) stops with "Failed to initialize scripts data!".
+    static func cleanupScripts(gamePath: URL, logger: Logger) {
+        try? FileManager.default.removeItem(at: gamePath.appendingPathComponent("r6/scripts/zz_red4ext_plugins"))
+        let scc = gamePath.appendingPathComponent("engine/tools/scc")
+        guard FileManager.default.isExecutableFile(atPath: scc.path),
+              let result = try? run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path]) else { return }
+        logger.debug("scc after unstaging plugin scripts: \(String(decoding: result.output, as: UTF8.self))")
+    }
+    
+    /// The "[ERROR" lines of scc output with the 3 lines after each, at most 40 lines (as launch_red4ext.sh shows them).
+    static func errorBlocks(_ output: String) -> String {
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
+        let keep = Set(lines.indices.filter { lines[$0].hasPrefix("[ERROR") }.flatMap { $0...min($0 + 3, lines.count - 1) })
+        return keep.sorted().prefix(40).map { String(lines[$0]) }.joined(separator: "\n")
+    }
+    
+    private static func run(_ executable: URL, _ arguments: [String], mergeStderr: Bool = true) throws -> (status: Int32, output: Data) {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
@@ -249,6 +275,7 @@ public actor GameLauncher {
     
     /// Crash reports written since the session started, plus the tail of the newest red4ext log.
     public func exitReport(for session: GameSession, tailLines: Int = 40) async -> String {
+        await session.cleanup?.value
         let fm = FileManager.default
         let reportsDir = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/DiagnosticReports")
         func newFiles(in dir: URL, where match: (String) -> Bool) -> [URL] {
@@ -305,6 +332,8 @@ public class GameSession: @unchecked Sendable {
     public let skippedScripts: [String]
     
     internal let process: Process
+    /// Unstages plugin scripts and recompiles once the game exits.
+    internal var cleanup: Task<Void, Never>?
     
     private var _status: GameSessionStatus = .running
     public var status: GameSessionStatus {

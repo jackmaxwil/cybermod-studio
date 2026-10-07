@@ -95,3 +95,12 @@ final class PluginGateTests: XCTestCase {
         XCTAssertEqual(PluginGate.evaluate(gamePath: game).allowed, [])
     }
 }
+
+final class GameLauncherTests: XCTestCase {
+    func testErrorBlocksKeepErrorLinesAndThreeAfter() {
+        let out = "[INFO] start\n[ERROR - x.reds:1] bad\n a\n b\n c\n d\n[WARNING] w\n[ERROR - y.reds:2] worse\n e\nCompilation failed"
+        XCTAssertEqual(GameLauncher.errorBlocks(out),
+                       "[ERROR - x.reds:1] bad\n a\n b\n c\n[ERROR - y.reds:2] worse\n e\nCompilation failed")
+        XCTAssertEqual(GameLauncher.errorBlocks("Compilation failed"), "")
+    }
+}
