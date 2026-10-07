@@ -19,6 +19,11 @@ let package = Package(
             name: "CyberModKit",
             targets: ["CyberModKit"]
         ),
+        // App state and actions over CyberModKit (used by the SwiftUI app)
+        .library(
+            name: "CyberModModel",
+            targets: ["CyberModModel"]
+        ),
         // Command-line interface
         .executable(
             name: "cybermod",
@@ -62,6 +67,13 @@ let package = Package(
             path: "Sources/CyberModKit"
         ),
 
+        // MARK: - App model (@MainActor observable state over CyberModKit, no views)
+        .target(
+            name: "CyberModModel",
+            dependencies: ["CyberModKit"],
+            path: "Sources/CyberModModel"
+        ),
+
         // MARK: - CLI (thin layer over CyberModKit)
         .executableTarget(
             name: "CyberModCLI",
@@ -82,6 +94,11 @@ let package = Package(
             name: "CyberModKitTests",
             dependencies: ["CyberModKit"],
             path: "Tests/CyberModKitTests"
+        ),
+        .testTarget(
+            name: "CyberModModelTests",
+            dependencies: ["CyberModModel", "CyberModKit"],
+            path: "Tests/CyberModModelTests"
         ),
     ]
 )
