@@ -7,7 +7,7 @@ options:
   createIntermediateGroups: true
 
 packages:
-  CyberModCore:
+  CyberModStudioPackage:
     path: .
 
 targets:
@@ -18,8 +18,12 @@ targets:
       - path: CyberModStudio
         excludes:
           - "**/.DS_Store"
+          - "Info.plist"
     dependencies:
-      - package: CyberModCore
+      - package: CyberModStudioPackage
+        product: CyberModModel
+      - package: CyberModStudioPackage
+        product: CyberModKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cybermodstudio.app
@@ -28,9 +32,10 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.10"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
-        INFOPLIST_KEY_CFBundleDisplayName: CyberMod Studio
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: CyberModStudio/Info.plist
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.games
+        INFOPLIST_KEY_CFBundleDisplayName: CyberMod Studio
         ENABLE_HARDENED_RUNTIME: YES
     entitlements:
       path: CyberModStudio/CyberModStudio.entitlements

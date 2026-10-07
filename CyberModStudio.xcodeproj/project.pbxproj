@@ -7,23 +7,32 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		19E93CD98F9F9881AF0F55A9 /* FomodInstallerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */; };
-		79CAB2E0150BDAEA2A947A9A /* CyberModStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */; };
-		84F819C96B9CEAAFC0825021 /* CyberModCore in Frameworks */ = {isa = PBXBuildFile; productRef = FB86EA128FD16F58D902FFB6 /* CyberModCore */; };
-		896A5709CC591D1B752B7196 /* ModManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8A906B2982213D37AABCA7 /* ModManagerView.swift */; };
-		9D1298254132A3BDFDE7D7BF /* NexusBrowserSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */; };
-		C285C564847E0D0BEAEAC3B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B89BAC03DF6ED9728F4158 /* ContentView.swift */; };
+		05521A17B0E5CD50B29D6CD9 /* CyberModKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7E5C7E2622FA21C39BE45687 /* CyberModKit */; };
+		0E3B960FB84D3AEC290C3938 /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BCE1956432B0B81F30116D /* HealthView.swift */; };
+		285F0CC4585EC61E97F969EC /* LoadOrderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97CE626AC02E97069E4B23C6 /* LoadOrderView.swift */; };
+		3340C2BCE1F28438E2955470 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42964B760141C46581B6B66C /* SettingsView.swift */; };
+		3CD19E80DB0F5E15CB701FE4 /* PlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDCBFF1AFF80530543DCEC3 /* PlayView.swift */; };
+		6A988FFAD1360F7846AEF9A2 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F51022E96F85376BB7DCA31 /* LibraryView.swift */; };
+		84F819C96B9CEAAFC0825021 /* CyberModModel in Frameworks */ = {isa = PBXBuildFile; productRef = 69062446A265F95B9A63580E /* CyberModModel */; };
+		9C0A59BE04155A6B88E94EEE /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E3E10DC1DA2B5A003E8DF0 /* ActivityView.swift */; };
+		ED15B87C58410897C80D7080 /* CyberModStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9BFE9F910924397345117BA /* CyberModStudioApp.swift */; };
+		F5DFEE3FB960B126203D3EFD /* DiscoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34030FFF57DC7E349BCDC232 /* DiscoverView.swift */; };
+		FC2332BD6BA9DF56768927B9 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CB27B3C5D7EFCB25504269 /* Components.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FomodInstallerSheet.swift; sourceTree = "<group>"; };
+		03BCE1956432B0B81F30116D /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
+		06CB27B3C5D7EFCB25504269 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		34030FFF57DC7E349BCDC232 /* DiscoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverView.swift; sourceTree = "<group>"; };
+		3BDCBFF1AFF80530543DCEC3 /* PlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayView.swift; sourceTree = "<group>"; };
+		42964B760141C46581B6B66C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4F51022E96F85376BB7DCA31 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		70E3E10DC1DA2B5A003E8DF0 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		7A398BA895F7A19FFF1EC2A2 /* cybermod-studio */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "cybermod-studio"; path = .; sourceTree = SOURCE_ROOT; };
-		81B89BAC03DF6ED9728F4158 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberModStudioApp.swift; sourceTree = "<group>"; };
+		97CE626AC02E97069E4B23C6 /* LoadOrderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadOrderView.swift; sourceTree = "<group>"; };
 		E782311CB475E744A7D1BF82 /* CyberModStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CyberModStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		EE8A906B2982213D37AABCA7 /* ModManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModManagerView.swift; sourceTree = "<group>"; };
+		E9BFE9F910924397345117BA /* CyberModStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberModStudioApp.swift; sourceTree = "<group>"; };
 		F16FBF0109A71516ADA6E3BB /* CyberModStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CyberModStudio.entitlements; sourceTree = "<group>"; };
-		F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NexusBrowserSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,13 +40,22 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84F819C96B9CEAAFC0825021 /* CyberModCore in Frameworks */,
+				84F819C96B9CEAAFC0825021 /* CyberModModel in Frameworks */,
+				05521A17B0E5CD50B29D6CD9 /* CyberModKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		12A5D7270BC74DE7B1B2769A /* App */ = {
+			isa = PBXGroup;
+			children = (
+				E9BFE9F910924397345117BA /* CyberModStudioApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
 		20897779ADD90EBDB3577AC1 = {
 			isa = PBXGroup;
 			children = (
@@ -45,6 +63,22 @@
 				F42BA93555647868FD92E4F1 /* Packages */,
 				44546489B3C5CF4C4788AEFD /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		263408C7503130830CFEC62E /* Activity */ = {
+			isa = PBXGroup;
+			children = (
+				70E3E10DC1DA2B5A003E8DF0 /* ActivityView.swift */,
+			);
+			path = Activity;
+			sourceTree = "<group>";
+		};
+		41FA6A7FDD46034D830E2F92 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				4F51022E96F85376BB7DCA31 /* LibraryView.swift */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 		44546489B3C5CF4C4788AEFD /* Products */ = {
@@ -55,14 +89,77 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		4D7781EB5F40714D614E65D7 /* Discover */ = {
+			isa = PBXGroup;
+			children = (
+				34030FFF57DC7E349BCDC232 /* DiscoverView.swift */,
+			);
+			path = Discover;
+			sourceTree = "<group>";
+		};
+		807DCE2B00BED65557294596 /* Health */ = {
+			isa = PBXGroup;
+			children = (
+				03BCE1956432B0B81F30116D /* HealthView.swift */,
+			);
+			path = Health;
+			sourceTree = "<group>";
+		};
+		A8DA587B242340F969657373 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				42964B760141C46581B6B66C /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		BB918693B61687A5964A91DA /* Play */ = {
+			isa = PBXGroup;
+			children = (
+				3BDCBFF1AFF80530543DCEC3 /* PlayView.swift */,
+			);
+			path = Play;
+			sourceTree = "<group>";
+		};
+		C0EA5789BD652D376AB373BE /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				06CB27B3C5D7EFCB25504269 /* Components.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		DC7F3F50E155225A5FDD570D /* CyberModStudio */ = {
 			isa = PBXGroup;
 			children = (
 				F16FBF0109A71516ADA6E3BB /* CyberModStudio.entitlements */,
-				94FBDEE00AF5D5D134854AAE /* CyberModStudioApp.swift */,
-				F6F30F5F04B4A2E2AA3D8BE6 /* Views */,
+				12A5D7270BC74DE7B1B2769A /* App */,
+				C0EA5789BD652D376AB373BE /* Components */,
+				EA9C134B3246A035D7E9AD31 /* Features */,
 			);
 			path = CyberModStudio;
+			sourceTree = "<group>";
+		};
+		E0922AB35BC3CD797DB67F43 /* LoadOrder */ = {
+			isa = PBXGroup;
+			children = (
+				97CE626AC02E97069E4B23C6 /* LoadOrderView.swift */,
+			);
+			path = LoadOrder;
+			sourceTree = "<group>";
+		};
+		EA9C134B3246A035D7E9AD31 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				263408C7503130830CFEC62E /* Activity */,
+				4D7781EB5F40714D614E65D7 /* Discover */,
+				807DCE2B00BED65557294596 /* Health */,
+				41FA6A7FDD46034D830E2F92 /* Library */,
+				E0922AB35BC3CD797DB67F43 /* LoadOrder */,
+				BB918693B61687A5964A91DA /* Play */,
+				A8DA587B242340F969657373 /* Settings */,
+			);
+			path = Features;
 			sourceTree = "<group>";
 		};
 		F42BA93555647868FD92E4F1 /* Packages */ = {
@@ -71,17 +168,6 @@
 				7A398BA895F7A19FFF1EC2A2 /* cybermod-studio */,
 			);
 			name = Packages;
-			sourceTree = "<group>";
-		};
-		F6F30F5F04B4A2E2AA3D8BE6 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				81B89BAC03DF6ED9728F4158 /* ContentView.swift */,
-				22D3C21DA669D559DD415F49 /* FomodInstallerSheet.swift */,
-				EE8A906B2982213D37AABCA7 /* ModManagerView.swift */,
-				F5FEA3D2EEC452F86F5EFA3C /* NexusBrowserSheet.swift */,
-			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -100,7 +186,8 @@
 			);
 			name = CyberModStudio;
 			packageProductDependencies = (
-				FB86EA128FD16F58D902FFB6 /* CyberModCore */,
+				69062446A265F95B9A63580E /* CyberModModel */,
+				7E5C7E2622FA21C39BE45687 /* CyberModKit */,
 			);
 			productName = CyberModStudio;
 			productReference = E782311CB475E744A7D1BF82 /* CyberModStudio.app */;
@@ -144,11 +231,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C285C564847E0D0BEAEAC3B2 /* ContentView.swift in Sources */,
-				79CAB2E0150BDAEA2A947A9A /* CyberModStudioApp.swift in Sources */,
-				19E93CD98F9F9881AF0F55A9 /* FomodInstallerSheet.swift in Sources */,
-				896A5709CC591D1B752B7196 /* ModManagerView.swift in Sources */,
-				9D1298254132A3BDFDE7D7BF /* NexusBrowserSheet.swift in Sources */,
+				9C0A59BE04155A6B88E94EEE /* ActivityView.swift in Sources */,
+				FC2332BD6BA9DF56768927B9 /* Components.swift in Sources */,
+				ED15B87C58410897C80D7080 /* CyberModStudioApp.swift in Sources */,
+				F5DFEE3FB960B126203D3EFD /* DiscoverView.swift in Sources */,
+				0E3B960FB84D3AEC290C3938 /* HealthView.swift in Sources */,
+				6A988FFAD1360F7846AEF9A2 /* LibraryView.swift in Sources */,
+				285F0CC4585EC61E97F969EC /* LoadOrderView.swift in Sources */,
+				3CD19E80DB0F5E15CB701FE4 /* PlayView.swift in Sources */,
+				3340C2BCE1F28438E2955470 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -283,8 +374,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CyberModStudio/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CyberMod Studio";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -307,8 +399,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CyberModStudio/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CyberMod Studio";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -353,9 +446,13 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		FB86EA128FD16F58D902FFB6 /* CyberModCore */ = {
+		69062446A265F95B9A63580E /* CyberModModel */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CyberModCore;
+			productName = CyberModModel;
+		};
+		7E5C7E2622FA21C39BE45687 /* CyberModKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CyberModKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

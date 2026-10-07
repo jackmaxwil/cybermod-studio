@@ -64,7 +64,8 @@ extension ModStore {
 
 // MARK: - Load order
 
-public struct ArchiveEntry: Codable, Equatable, Sendable {
+public struct ArchiveEntry: Codable, Equatable, Sendable, Identifiable {
+    public var id: String { file }
     /// 1 loads first and wins every file it shares with later archives.
     public var rank: Int
     public var file: String

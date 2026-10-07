@@ -48,7 +48,8 @@ public enum SetupStep: Equatable, Sendable {
 @MainActor @Observable
 public final class AppModel {
     public private(set) var kit: Kit
-    let gameLogURL: URL
+    /// Where play sessions write the game's output (~/Library/Logs/CyberModStudio/game.log).
+    public let gameLogURL: URL
 
     // The game folder as last read by `refresh()`.
     public private(set) var gameFound = false
@@ -60,7 +61,8 @@ public final class AppModel {
     public private(set) var refreshing = false
 
     public private(set) var updates: [UpdateInfo] = []
-    public private(set) var registry: [RegistryEntry] = []
+    public private(set) var registryIndex: RegistryIndex?
+    public var registry: [RegistryEntry] { registryIndex?.mods ?? [] }
     public private(set) var registryError: KitError?
 
     public private(set) var activities: [Activity] = []
@@ -72,6 +74,7 @@ public final class AppModel {
     public private(set) var play: PlayState = .idle
     public private(set) var gameOutput: [String] = []
     public private(set) var lastExit: GameExit?
+    public private(set) var playStarted: Date?
 
     private var cancelCurrent: (() -> Void)?
     private var session: PlaySession?
@@ -248,11 +251,11 @@ public final class AppModel {
         waitForNexusIfNeeded()
     }
 
-    /// Installs dropped or picked files and folders one after another.
-    public func add(files: [URL]) async {
-        for file in files {
-            await add(.local(file.standardizedFileURL))
-            if failure != nil { return }
+    /// Installs dropped or picked files, folders and links one after another; stops at the first failure.
+    public func add(urls: [URL]) async {
+        for url in urls {
+            if url.isFileURL { await add(.local(url.standardizedFileURL)) } else { await add(url.absoluteString) }
+            if failure != nil || nexusWaiting != nil { return }
         }
     }
 
@@ -331,13 +334,13 @@ public final class AppModel {
     public var registryURL: String { Config(home: kit.home).values["registry.url"] ?? "" }
 
     public func loadRegistry() async {
-        guard !registryURL.isEmpty else { registry = []; registryError = nil; return }
+        guard !registryURL.isEmpty else { registryIndex = nil; registryError = nil; return }
         let kit = self.kit
         do {
-            registry = try await Task.detached { try await Registry.load(kit: kit).mods }.value
+            registryIndex = try await Task.detached { try await Registry.load(kit: kit) }.value
             registryError = nil
         } catch {
-            registry = []
+            registryIndex = nil
             registryError = Self.kitError(error)
         }
     }
@@ -382,6 +385,7 @@ public final class AppModel {
         do {
             let user = try await Nexus.validate(key: key, session: session)
             try Secrets.set(Nexus.keyAccount, key)
+            nexusKeySaved = true
             return user
         } catch {
             failure = Failure(error: Self.kitError(error))
@@ -389,9 +393,15 @@ public final class AppModel {
         }
     }
 
-    public var nexusKeySaved: Bool { (try? Nexus.key()) != nil }
+    /// Whether a Nexus API key is set (from `checkNexusKey()`; reading the Keychain can show a prompt, so not on every redraw).
+    public private(set) var nexusKeySaved = false
 
-    public func removeNexusKey() { Secrets.delete(Nexus.keyAccount) }
+    public func checkNexusKey() { nexusKeySaved = (try? Nexus.key()) != nil }
+
+    public func removeNexusKey() {
+        Secrets.delete(Nexus.keyAccount)
+        checkNexusKey()
+    }
 
     // MARK: Play
 
@@ -410,6 +420,7 @@ public final class AppModel {
         self.session = session
         stopRequested = false
         play = .launching
+        playStarted = session.startedAt
         gameOutput = []
         lastExit = nil
         var compileErrors: String?
@@ -430,6 +441,7 @@ public final class AppModel {
                     activity.lines = report.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
                     activities.append(activity)
                     play = .idle
+                    playStarted = nil
                     self.session = nil
                     await refresh()
                 }

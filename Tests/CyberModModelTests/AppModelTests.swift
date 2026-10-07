@@ -88,7 +88,7 @@ final class AppModelTests: XCTestCase {
     func testAddDisableEnableRemove() async throws {
         let model = makeModel()
         let mod = try makeTree(["Neon/archive/pc/mod/neon.archive": "n", "Neon/readme.txt": "hi"]).appendingPathComponent("Neon")
-        await model.add(files: [mod])
+        await model.add(urls: [mod])
         XCTAssertNil(model.failure)
         XCTAssertEqual(model.mods.map(\.id), ["neon"])
         XCTAssertTrue(exists("archive/pc/mod/neon.archive"))
@@ -125,7 +125,7 @@ final class AppModelTests: XCTestCase {
     func testErrorsSayWhatToDoNext() async throws {
         let model = makeModel()
         let windows = try makeTree(["Win/bin/x64/plugins/thing.dll": "x"]).appendingPathComponent("Win")
-        await model.add(files: [windows])
+        await model.add(urls: [windows])
         XCTAssertTrue(model.failure?.error.message.contains("Windows-only") ?? false)
         XCTAssertFalse(model.failure?.error.hint.isEmpty ?? true)
         XCTAssertNil(model.failure?.retry, "nothing to retry")
@@ -138,7 +138,7 @@ final class AppModelTests: XCTestCase {
         // A file installed by hand is in the way: the error offers to overwrite, and the retry does.
         try write("archive/pc/mod/neon.archive", Data("hand".utf8))
         let mod = try makeTree(["neon.archive": "mod"])
-        await model.add(files: [mod.appendingPathComponent("neon.archive")])
+        await model.add(urls: [mod.appendingPathComponent("neon.archive")])
         let failure = try XCTUnwrap(model.failure)
         XCTAssertEqual(failure.retryTitle, "Overwrite")
         await failure.retry?()
@@ -148,7 +148,7 @@ final class AppModelTests: XCTestCase {
 
     func testRefusesChangesWhileTheGameRuns() async throws {
         let model = makeModel(running: true)
-        await model.add(files: [try makeTree(["a.archive": "a"]).appendingPathComponent("a.archive")])
+        await model.add(urls: [try makeTree(["a.archive": "a"]).appendingPathComponent("a.archive")])
         XCTAssertEqual(model.failure?.error.message, "Cyberpunk 2077 is running.")
         XCTAssertFalse(exists("archive/pc/mod/a.archive"))
     }
@@ -205,7 +205,7 @@ final class AppModelTests: XCTestCase {
         let tree = try makeTree([:])
         try writeRDAR([1, 2], to: tree.appendingPathComponent("A/alpha.archive"))
         try writeRDAR([2, 3], to: tree.appendingPathComponent("B/beta.archive"))
-        await model.add(files: [tree.appendingPathComponent("A"), tree.appendingPathComponent("B")])
+        await model.add(urls: [tree.appendingPathComponent("A"), tree.appendingPathComponent("B")])
         XCTAssertEqual(model.archives.map(\.file), ["alpha.archive", "beta.archive"])
         XCTAssertEqual(model.conflicts.map { "\($0.winner) > \($0.loser): \($0.files)" }, ["alpha.archive > beta.archive: 1"])
 
@@ -261,7 +261,7 @@ final class AppModelTests: XCTestCase {
         let model = makeModel()
         model.startGame()
         try await waitUntil("the game to start") { if case .running = model.play { return true } else { return false } }
-        await model.add(files: [try makeTree(["a.archive": "a"]).appendingPathComponent("a.archive")])
+        await model.add(urls: [try makeTree(["a.archive": "a"]).appendingPathComponent("a.archive")])
         XCTAssertEqual(model.failure?.error.message, "Cyberpunk 2077 is starting or running.")
         model.failure = nil
         model.stopGame()
