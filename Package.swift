@@ -19,11 +19,6 @@ let package = Package(
             name: "cybermod",
             targets: ["CyberModCLI"]
         ),
-        // Privileged helper daemon
-        .executable(
-            name: "cybermod-daemon",
-            targets: ["CyberModDaemon"]
-        )
     ],
     dependencies: [
         // Argument parsing for CLI
@@ -65,9 +60,6 @@ let package = Package(
             path: "Sources/CyberModCore",
             resources: [
                 .copy("Schemas/Resources")
-            ],
-            linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"])
             ]
         ),
         
@@ -82,24 +74,11 @@ let package = Package(
             path: "Sources/CyberModCLI"
         ),
         
-        // MARK: - Daemon
-        .executableTarget(
-            name: "CyberModDaemon",
-            dependencies: [
-                "CyberModCore",
-                .product(name: "Logging", package: "swift-log"),
-            ],
-            path: "Sources/CyberModDaemon"
-        ),
-        
         // MARK: - Tests
         .testTarget(
             name: "CyberModCoreTests",
             dependencies: ["CyberModCore"],
-            path: "Tests/CyberModCoreTests",
-            linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"])
-            ]
+            path: "Tests/CyberModCoreTests"
         ),
     ]
 )

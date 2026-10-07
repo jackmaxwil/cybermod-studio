@@ -62,10 +62,10 @@
                                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                         Game Process (Cyberpunk 2077)                           │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐    │
-│  │ RED4ext.dylib │  │FridaGadget.dylib│ │DebugAgent.dylib│ │  Plugins...   │    │
-│  │ (Plugin host) │  │ (Hook runtime) │  │ (IPC client)  │  │               │    │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘    │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐                       │
+│  │ RED4ext.dylib │  │DebugAgent.dylib│ │  Plugins...   │                       │
+│  │ (Plugin host) │  │ (IPC client)  │  │               │                       │
+│  └───────────────┘  └───────────────┘  └───────────────┘                       │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -247,10 +247,7 @@ public actor GameLauncher {
         var environment = ProcessInfo.processInfo.environment
         
         // Inject RED4ext and required dylibs
-        var dylibs: [URL] = [
-            configuration.red4extPath,
-            configuration.fridaGadgetPath
-        ]
+        var dylibs: [URL] = [configuration.red4extPath]
         
         if options.enableDebugAgent {
             dylibs.append(configuration.debugAgentPath)

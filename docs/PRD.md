@@ -192,7 +192,7 @@ A single application where mod users can install and manage mods, mod creators c
 | ID | Requirement |
 |----|-------------|
 | T3.1 | Nexus Mods API v1 + GraphQL v2 |
-| T3.2 | Frida Gadget for hook orchestration |
+| T3.2 | RED4ext (DYLD_INSERT_LIBRARIES) for hook orchestration |
 | T3.3 | RED4ext SDK compatibility |
 | T3.4 | IPC protocol for game communication |
 
@@ -268,7 +268,6 @@ A single application where mod users can install and manage mods, mod creators c
 - **TweakXL**: Mod for runtime TweakDB modifications
 - **ArchiveXL**: Mod for extending game resources
 - **FOMOD**: Mod installer format with conditional options
-- **Frida**: Dynamic instrumentation toolkit for hooking
 
 ### B. References
 - [RED4ext macOS Port](../related/RED4ext)

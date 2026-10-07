@@ -16,7 +16,6 @@ public actor GameLauncher {
     
     private var gamePath: URL?
     private var red4extPath: URL?
-    private var fridaGadgetPath: URL?
     private var debugAgentPath: URL?
     
     // MARK: - Singleton
@@ -35,12 +34,10 @@ public actor GameLauncher {
     public func configure(
         gamePath: URL,
         red4extPath: URL? = nil,
-        fridaGadgetPath: URL? = nil,
         debugAgentPath: URL? = nil
     ) {
         self.gamePath = gamePath
         self.red4extPath = red4extPath ?? gamePath.appendingPathComponent("red4ext/RED4ext.dylib")
-        self.fridaGadgetPath = fridaGadgetPath ?? gamePath.appendingPathComponent("red4ext/FridaGadget.dylib")
         self.debugAgentPath = debugAgentPath ?? gamePath.appendingPathComponent("red4ext/DebugAgent.dylib")
     }
     
@@ -64,33 +61,30 @@ public actor GameLauncher {
             throw GameLaunchError.gameNotFound(expectedPath: executablePath)
         }
         
+        let red4ext = red4extPath ?? profile.gamePath.appendingPathComponent("red4ext/RED4ext.dylib")
+        guard FileManager.default.fileExists(atPath: red4ext.path) else {
+            throw GameLaunchError.injectionFailed(dylib: red4ext, reason: "RED4ext.dylib is not installed")
+        }
+        
+        try verifyEntitlements(executablePath)
+        try compileScripts(gamePath: profile.gamePath)
+        
         logger.info("Launching Cyberpunk 2077 from \(executablePath.path)")
         
         // Build environment
         var environment = ProcessInfo.processInfo.environment
         
         // Collect dylibs to inject
-        var dylibsToInject: [URL] = []
-        
-        if let red4ext = red4extPath, FileManager.default.fileExists(atPath: red4ext.path) {
-            dylibsToInject.append(red4ext)
-        }
-        
-        if let frida = fridaGadgetPath, FileManager.default.fileExists(atPath: frida.path) {
-            dylibsToInject.append(frida)
-        }
+        var dylibsToInject = [red4ext]
         
         if options.enableDebugAgent, let debugAgent = debugAgentPath,
            FileManager.default.fileExists(atPath: debugAgent.path) {
             dylibsToInject.append(debugAgent)
         }
         
-        // Set DYLD environment variables
-        if !dylibsToInject.isEmpty {
-            environment["DYLD_INSERT_LIBRARIES"] = dylibsToInject.map(\.path).joined(separator: ":")
-            environment["DYLD_FORCE_FLAT_NAMESPACE"] = "1"
-            logger.debug("Injecting dylibs: \(dylibsToInject.map(\.lastPathComponent))")
-        }
+        // Set DYLD environment variables (same as launch_red4ext.sh)
+        environment["DYLD_INSERT_LIBRARIES"] = dylibsToInject.map(\.path).joined(separator: ":")
+        logger.debug("Injecting dylibs: \(dylibsToInject.map(\.lastPathComponent))")
         
         // Apply profile environment variables
         for (key, value) in profile.settings.environmentVariables {
@@ -173,6 +167,108 @@ public actor GameLauncher {
     /// Get the current game session
     public func getActiveSession() -> GameSession? {
         activeSession
+    }
+    
+    // MARK: - Pre-launch checks
+    
+    /// Entitlements RED4ext needs on the game binary (RED4ext scripts/red4ext_entitlements.plist).
+    static let requiredEntitlements = [
+        "com.apple.security.cs.allow-dyld-environment-variables",
+        "com.apple.security.cs.disable-library-validation",
+        "com.apple.security.cs.allow-unsigned-executable-memory",
+    ]
+    
+    /// Fails if the binary (e.g. restored by a Steam "Verify integrity") lacks the entitlements. Never re-signs.
+    private func verifyEntitlements(_ executable: URL) throws {
+        let result = try run(URL(fileURLWithPath: "/usr/bin/codesign"),
+                             ["-d", "--entitlements", ":-", executable.path], mergeStderr: false)
+        let plist = (try? PropertyListSerialization.propertyList(from: result.output, format: nil)) as? [String: Any] ?? [:]
+        let missing = Self.requiredEntitlements.filter { plist[$0] as? Bool != true }
+        if !missing.isEmpty {
+            throw GameLaunchError.missingEntitlements(executable: executable, missing: missing)
+        }
+    }
+    
+    /// Stages installed plugins' Scripts into r6/scripts/zz_red4ext_plugins and compiles with scc, like launch_red4ext.sh.
+    private func compileScripts(gamePath: URL) throws {
+        let fm = FileManager.default
+        let stage = gamePath.appendingPathComponent("r6/scripts/zz_red4ext_plugins")
+        try? fm.removeItem(at: stage)
+        let plugins = gamePath.appendingPathComponent("red4ext/plugins")
+        for plugin in (try? fm.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil)) ?? [] {
+            let scripts = plugin.appendingPathComponent("Scripts")
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: scripts.path, isDirectory: &isDir), isDir.boolValue else { continue }
+            try fm.createDirectory(at: stage, withIntermediateDirectories: true)
+            try fm.copyItem(at: scripts, to: stage.appendingPathComponent(plugin.lastPathComponent))
+        }
+        
+        let scc = gamePath.appendingPathComponent("engine/tools/scc")
+        if fm.isExecutableFile(atPath: scc.path) {
+            let result = try run(scc, ["-compile", gamePath.appendingPathComponent("r6/scripts").path])
+            guard result.status == 0 else {
+                throw GameLaunchError.scriptCompilationFailed(output: String(decoding: result.output, as: UTF8.self))
+            }
+        }
+        
+        // Process input mappings (best effort, as in launch_red4ext.sh)
+        let inputLoader = gamePath.appendingPathComponent("engine/tools/inputloader.pl")
+        if fm.isExecutableFile(atPath: inputLoader.path) {
+            _ = try? run(inputLoader, [])
+        }
+    }
+    
+    private func run(_ executable: URL, _ arguments: [String], mergeStderr: Bool = true) throws -> (status: Int32, output: Data) {
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = arguments
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = mergeStderr ? pipe : FileHandle.nullDevice
+        try process.run()
+        let output = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return (process.terminationStatus, output)
+    }
+    
+    // MARK: - Post-exit report
+    
+    /// Crash reports written since the session started, plus the tail of the newest red4ext log.
+    public func exitReport(for session: GameSession, tailLines: Int = 40) async -> String {
+        let fm = FileManager.default
+        let reportsDir = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/DiagnosticReports")
+        func newFiles(in dir: URL, where match: (String) -> Bool) -> [URL] {
+            let files = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+            return files
+                .map { ($0, (try? $0.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast) }
+                .filter { match($0.0.lastPathComponent) && $0.1 >= session.startedAt }
+                .sorted { $0.1 > $1.1 }
+                .map(\.0)
+        }
+        let isCrash = { (name: String) in name.hasPrefix("Cyberpunk2077") && name.hasSuffix(".ips") }
+        
+        var crashes = newFiles(in: reportsDir, where: isCrash)
+        // ReportCrash can take a few seconds to write the .ips after an abnormal exit.
+        if crashes.isEmpty, let code = session.exitCode, code != 0 {
+            for _ in 0..<15 where crashes.isEmpty {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                crashes = newFiles(in: reportsDir, where: isCrash)
+            }
+        }
+        
+        var report = crashes.isEmpty
+            ? "No new crash reports."
+            : "New crash reports:\n" + crashes.map { "  \($0.path)" }.joined(separator: "\n")
+        
+        let logsDir = session.profile.gamePath.appendingPathComponent("red4ext/logs")
+        if let log = newFiles(in: logsDir, where: { $0.hasPrefix("red4ext") && $0.hasSuffix(".log") }).first,
+           let text = try? String(contentsOf: log, encoding: .utf8) {
+            let tail = text.split(separator: "\n", omittingEmptySubsequences: false).suffix(tailLines)
+            report += "\n\n\(log.lastPathComponent) (last \(tailLines) lines):\n" + tail.joined(separator: "\n")
+        } else {
+            report += "\n\nNo red4ext log written this session."
+        }
+        return report
     }
 }
 
@@ -306,6 +402,8 @@ public enum GameLaunchError: LocalizedError {
     case notRunning
     case launchFailed(reason: String)
     case injectionFailed(dylib: URL, reason: String)
+    case missingEntitlements(executable: URL, missing: [String])
+    case scriptCompilationFailed(output: String)
     
     public var errorDescription: String? {
         switch self {
@@ -319,6 +417,15 @@ public enum GameLaunchError: LocalizedError {
             return "Failed to launch game: \(reason)"
         case .injectionFailed(let dylib, let reason):
             return "Failed to inject \(dylib.lastPathComponent): \(reason)"
+        case .missingEntitlements(let executable, let missing):
+            return """
+            The game binary is missing entitlements RED4ext needs (\(missing.joined(separator: ", "))). \
+            A Steam "Verify integrity" or update restores the stock binary. Re-sign it with RED4ext's plist:
+              codesign -f -s - -o runtime --entitlements RED4ext/scripts/red4ext_entitlements.plist "\(executable.path)"
+            (or: RED4ext/scripts/codesign_macos.sh exe "\(executable.path)")
+            """
+        case .scriptCompilationFailed(let output):
+            return "REDscript compilation (scc) failed:\n\(output)"
         }
     }
 }

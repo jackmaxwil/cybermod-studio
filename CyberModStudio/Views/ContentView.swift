@@ -185,6 +185,7 @@ struct GameRunnerView: View {
                     Text(error)
                         .foregroundStyle(.red)
                         .font(.caption)
+                        .textSelection(.enabled)
                 }
             }
         }
@@ -225,7 +226,6 @@ struct GameRunnerView: View {
             
             let basePath = gamePath + "/red4ext"
             FrameworkRow(name: "RED4ext", path: basePath + "/RED4ext.dylib")
-            FrameworkRow(name: "Frida Gadget", path: basePath + "/FridaGadget.dylib")
             FrameworkRow(name: "TweakXL", path: basePath + "/plugins/TweakXL/TweakXL.dylib")
             FrameworkRow(name: "ArchiveXL", path: basePath + "/plugins/ArchiveXL/ArchiveXL.dylib")
             FrameworkRow(name: "ModMenu", path: basePath + "/plugins/ModMenu/ModMenu.dylib")

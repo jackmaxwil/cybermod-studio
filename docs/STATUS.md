@@ -9,7 +9,6 @@
 ### Infrastructure
 - [x] `CyberModCore` SPM package builds (all dependencies resolved)
 - [x] `CyberModCLI` implements `list`, `install`, `uninstall`, `enable`, `disable`, `profile`, `launch`
-- [x] `CyberModDaemon` skeleton (XPC not yet connected)
 - [x] `CyberModStudio.xcodeproj` generated via xcodegen, depends on CyberModCore
 - [x] SQLite database (GRDB) with migrations for mods, profiles, deployed files
 
@@ -32,14 +31,13 @@
 - [x] `AppState.toggleGame()` fixed — calls `configure(gamePath:)` before launch
 - [x] Real-time uptime timer
 - [x] Game path configuration (browse picker)
-- [x] Framework status display (RED4ext, Frida, TweakXL, ArchiveXL, ModMenu)
+- [x] Framework status display (RED4ext, TweakXL, ArchiveXL, ModMenu)
 - [x] Log viewer — reads latest RED4ext log, color-coded by level
 - [x] Process monitoring via `ProcessMonitor` actor
 - [x] Error display in UI
 
 ## Not yet started (Phase 2+)
 
-- [ ] Daemon (XPC for privileged operations)
 - [ ] Debug Studio (in-game IPC)
 - [ ] Creation Studio (mod project editor)
 - [ ] Porting Studio (Windows→macOS guidance)

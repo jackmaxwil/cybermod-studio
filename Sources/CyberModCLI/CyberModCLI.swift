@@ -366,6 +366,7 @@ struct LaunchCommand: AsyncParsableCommand {
             if let exitCode = session.exitCode {
                 print("\nGame exited with code: \(exitCode)")
             }
+            print(await launcher.exitReport(for: session))
         } catch let error as GameLaunchError {
             print("Error: \(error.localizedDescription)")
             throw ExitCode.failure

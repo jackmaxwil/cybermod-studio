@@ -134,9 +134,13 @@ class AppState: ObservableObject {
             Task { @MainActor in
                 if let session = self.activeSession {
                     self.gameUptime = session.uptime
-                    if !session.isRunning {
+                    if !session.isRunning, self.isGameRunning {
                         self.isGameRunning = false
                         self.uptimeTimer?.invalidate()
+                        if let code = session.exitCode, code != 0 {
+                            let report = await self.gameLauncher.exitReport(for: session)
+                            self.lastError = "Game exited with code \(code).\n\(report)"
+                        }
                     }
                 }
             }

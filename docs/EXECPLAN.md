@@ -34,8 +34,8 @@ the game itself and assume the human will progress past the main menu.**
 ### How to Launch the Game
 
 There are two launcher scripts. **Always prefer the installed launcher** in the
-game directory, since it picks up Frida Gadget, address databases, and
-REDscript compilation automatically.
+game directory, since it picks up installed plugins' scripts and REDscript
+compilation automatically.
 
 **Installed launcher (preferred):**
 
@@ -45,10 +45,10 @@ cd "$HOME/Library/Application Support/Steam/steamapps/common/Cyberpunk 2077"
 ```
 
 This script:
-1. Builds the `DYLD_INSERT_LIBRARIES` injection list (RED4ext.dylib + FridaGadget.dylib)
+1. Stages installed plugins' `Scripts` into `r6/scripts/zz_red4ext_plugins`
 2. Compiles REDscript sources if the compiler is present
 3. Processes input mappings if the loader is present
-4. Launches the game binary with injection environment variables
+4. Launches the game binary with `DYLD_INSERT_LIBRARIES` set to RED4ext.dylib
 
 **Development launcher (fallback, if installed launcher doesn't exist):**
 
@@ -58,7 +58,7 @@ cd ~/Development/cyberpunk/RED4ext
 ```
 
 This simpler script injects `RED4ext.dylib` from `$(pwd)/bin/` but does **not**
-handle Frida Gadget, REDscript compilation, or input mappings.
+handle plugin scripts, REDscript compilation, or input mappings.
 
 ### Game Directory Layout
 
@@ -68,9 +68,6 @@ handle Frida Gadget, REDscript compilation, or input mappings.
 ├── launch_red4ext.sh                                 # Installed launcher
 ├── red4ext/
 │   ├── RED4ext.dylib                                 # Loader
-│   ├── FridaGadget.dylib                             # Hooking runtime
-│   ├── FridaGadget.config                            # Frida config
-│   ├── red4ext_hooks.js                              # Hook definitions
 │   ├── config.ini                                    # RED4ext config
 │   ├── logs/red4ext.log                              # Loader log (check after launch)
 │   ├── bin/x64/
@@ -152,10 +149,9 @@ from every plugin being testable.
 
 ### Critical lessons learned
 
-1. **Always build with `-DRED4EXT_USE_FRIDA_GUM=OFF`**. Embedding Frida Gum alongside external FridaGadget.dylib causes a fatal crash.
-2. **Game binary re-signing is required** after every Steam "Verify integrity" operation. The hardened runtime flag blocks DYLD_INSERT_LIBRARIES. Sign outside the bundle: `cp "$GAME_BIN" /tmp/sign && codesign -f -s - --entitlements scripts/red4ext_entitlements.plist --options runtime /tmp/sign && cp /tmp/sign "$GAME_BIN"`
-3. **Image base fix**: Both the loader (`Addresses.cpp`) and SDK (`Relocation-inl.hpp`) were using `_dyld_get_image_header(0)` which returns RED4ext.dylib (not the game) when DYLD injection is active. Fixed to iterate `_dyld_image_count()` and find the image matching `_NSGetExecutablePath()`.
-4. **Address formula fix**: The loader's address calculation was `base + slide + segmentOffset + offset` which double-counted ASLR slide. Fixed to store runtime segment bases (vmaddr + slide) and use `segmentBase + offset`.
+1. **Game binary re-signing is required** after every Steam "Verify integrity" operation. The hardened runtime flag blocks DYLD_INSERT_LIBRARIES. Sign outside the bundle: `cp "$GAME_BIN" /tmp/sign && codesign -f -s - --entitlements scripts/red4ext_entitlements.plist --options runtime /tmp/sign && cp /tmp/sign "$GAME_BIN"`
+2. **Image base fix**: Both the loader (`Addresses.cpp`) and SDK (`Relocation-inl.hpp`) were using `_dyld_get_image_header(0)` which returns RED4ext.dylib (not the game) when DYLD injection is active. Fixed to iterate `_dyld_image_count()` and find the image matching `_NSGetExecutablePath()`.
+3. **Address formula fix**: The loader's address calculation was `base + slide + segmentOffset + offset` which double-counted ASLR slide. Fixed to store runtime segment bases (vmaddr + slide) and use `segmentBase + offset`.
 
 ### 1.1 RED4ext — Results
 
@@ -261,13 +257,13 @@ settings persist to disk, native↔REDscript bridge is functional.
 
 | # | Task | Detail | Est. |
 |---|------|--------|------|
-| 1 | Buffer structure reverse engineering | Write a Frida hook script that intercepts NRD functions and logs arguments (pointer, size, first N bytes of struct). Launch game via `launch_red4ext.sh` with RT enabled (human enables RT in graphics settings, enters gameplay). Read Frida logs to map `struct NRDDispatchDesc` fields. | 8h |
-| 2 | Identify MTLTexture pointers | Extend Frida hook to dump pointer fields within NRD buffer struct. Launch game with RT enabled (human enters gameplay). Read logs — locate `id<MTLTexture>` objects by checking Objective-C class names at pointer targets. | 4h |
-| 3 | Determine motion vector format | Capture motion vector data via Frida hook. Launch game (human moves camera in-game to generate motion). Analyze logged data: NDC vs pixel space, half-res vs full-res, 2-channel vs 3-channel. | 2h |
+| 1 | Buffer structure reverse engineering | Write a RED4ext plugin hook that intercepts NRD functions and logs arguments (pointer, size, first N bytes of struct). Launch game via `launch_red4ext.sh` with RT enabled (human enables RT in graphics settings, enters gameplay). Read the plugin log to map `struct NRDDispatchDesc` fields. | 8h |
+| 2 | Identify MTLTexture pointers | Extend the hook to dump pointer fields within NRD buffer struct. Launch game with RT enabled (human enters gameplay). Read logs — locate `id<MTLTexture>` objects by checking Objective-C class names at pointer targets. | 4h |
+| 3 | Determine motion vector format | Capture motion vector data via the hook. Launch game (human moves camera in-game to generate motion). Analyze logged data: NDC vs pixel space, half-res vs full-res, 2-channel vs 3-channel. | 2h |
 | 4 | Implement buffer extraction | Fill in `BufferInterceptor::ExtractBuffer()` with real struct offsets. Extract all required textures from game buffer. | 3h |
 | 5 | Implement buffer conversion | Complete `BufferConverter.mm` — convert game textures to MTLTexture format expected by MetalFX Temporal Scaler (pixel format, size matching). | 3h |
 | 6 | Wire hooks to MetalFX pipeline | In `NRDHooks.cpp`: intercept NRD dispatch, extract buffers, run through MetalFX temporal scaler, write output back to game's output texture. | 4h |
-| 7 | Integrate Frida hook installation | Automate hook installation via RED4ext plugin lifecycle (not manual Frida attachment). Use RED4ext hooking API or embed Frida script. | 3h |
+| 7 | Integrate hook installation | Automate hook installation via the RED4ext plugin lifecycle and hooking API. | 3h |
 | 8 | Configuration system | Implement TOML config: enable/disable per-feature (diffuse GI, specular, shadows), quality presets, debug overlays. | 2h |
 | 9 | Performance benchmarking | A/B test: NRD vs MetalFX. Launch game twice — once with plugin disabled, once enabled. Human sets RT medium/ultra at 1080p, 1440p, 4K and reports FPS from in-game overlay. Target: 20–40% improvement. | 2h |
 | 10 | Visual quality validation | Launch game with MetalFX active (human enters same scene with and without plugin). Human screenshots for comparison — check ghosting, temporal artifacts, shadow quality, specular accuracy. | 2h |
@@ -389,7 +385,7 @@ build if needed, package for distribution.
 | 1 | Windows mod analyzer | Given a Windows mod zip: scan for DLLs, identify dependencies (MinHook, Detours, Address Library), list required address hashes, report compatibility. | 3h |
 | 2 | Address mapping tool | Show Windows→macOS address mapping. For each hash used by the mod, show: resolved on macOS? offset known? | 2h |
 | 3 | Scaffold generator | Generate macOS project from Windows mod: create CMakeLists.txt, stub `AddressResolverOverride.hpp`, replace `#include <windows.h>` with macOS equivalents. | 3h |
-| 4 | API migration guide | Built-in reference: Windows API → macOS equivalent. MinHook → RED4ext hooks, Detours → Frida, VirtualAlloc → mmap, etc. | 2h |
+| 4 | API migration guide | Built-in reference: Windows API → macOS equivalent. MinHook/Detours → RED4ext hooks, VirtualAlloc → mmap, etc. | 2h |
 | 5 | Guided porting workflow | Step-by-step wizard: analyze → map addresses → scaffold → build → test. Track progress per mod. | 3h |
 
 **Exit criteria:** Can analyze a Windows mod, identify porting requirements,
@@ -403,7 +399,7 @@ generate a macOS project scaffold, guide user through address mapping.
 |---|------|--------|------|
 | 1 | End-to-end integration test | Install full stack: RED4ext + TweakXL + ArchiveXL + ModMenu + MetalFX. Launch game via `launch_red4ext.sh` (human progresses to gameplay, presses F10 for ModMenu, equips custom item for ArchiveXL, enables RT for MetalFX). Read all logs. Confirm zero errors. | 4h |
 | 2 | Game update resilience | Document and test the full "game updated" workflow: re-run address scripts, rebuild plugins, update Studio framework management. | 2h |
-| 3 | Error recovery testing | Test every failure mode: missing addresses, corrupt dylib, Frida not signed, game crash during load, database corruption. Verify graceful recovery. | 3h |
+| 3 | Error recovery testing | Test every failure mode: missing addresses, corrupt dylib, game binary missing entitlements, game crash during load, database corruption. Verify graceful recovery. | 3h |
 | 4 | Performance audit | Profile Studio memory usage, plugin hook overhead, MetalFX latency. Optimize any hot paths. | 2h |
 | 5 | Documentation sweep | Every project: ensure README, STATUS.md, build instructions are current. Remove stale TODOs. | 3h |
 | 6 | Release packaging | Create distributable packages for each project. Write install guide. Create a "quick start" that gets a user from zero to modded game. | 3h |

@@ -22,8 +22,7 @@ See `docs/STATUS.md` for the up-to-date project status.
 
 1. **CyberModCore** - All business logic (no UI dependencies)
 2. **CyberModCLI** - Command-line interface using ArgumentParser
-3. **CyberModDaemon** - Privileged helper for game injection
-4. **CyberModStudio** - SwiftUI macOS application
+3. **CyberModStudio** - SwiftUI macOS application
 
 ### Architecture Principles
 
@@ -130,4 +129,3 @@ All sibling projects live under `~/Development/cyberpunk/`:
 2. **Sendable conformance** - Data passed between actors must be Sendable
 3. **Database access** - Always use `await` for database operations
 4. **File paths** - Use `URL` not `String` for all file paths
-5. **XPC complexity** - Test daemon communication thoroughly

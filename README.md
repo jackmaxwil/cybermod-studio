@@ -15,7 +15,6 @@ CyberMod Studio is a SwiftUI application that combines mod management, game laun
 
 ### Phase 2+ (Planned)
 
-- Privileged daemon (XPC)
 - Debug Studio (in-game IPC)
 - Creation Studio (mod project editor)
 - Porting Studio (Windows-to-macOS guidance)
