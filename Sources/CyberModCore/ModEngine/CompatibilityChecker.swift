@@ -55,8 +55,9 @@ public actor CompatibilityChecker {
             warnings.append("TweakXL mod - ensure macOS port of TweakXL is installed")
         }
         
-        if analysis.detectedTypes.contains(.archiveXL) {
-            warnings.append("ArchiveXL mod - ensure macOS port of ArchiveXL is installed")
+        // On macOS the game never loads archive/pc/mod itself; ArchiveXL loads those archives.
+        if analysis.detectedTypes.contains(.archive) || analysis.detectedTypes.contains(.archiveXL) {
+            warnings.append("Archive mod - needs ArchiveXL (red4ext/plugins/ArchiveXL); without it the game ignores archive/pc/mod on macOS")
         }
         
         let isCompatible = issues.isEmpty

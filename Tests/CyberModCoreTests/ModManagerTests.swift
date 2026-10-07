@@ -139,6 +139,22 @@ final class CompatibilityCheckerTests: XCTestCase {
         
         XCTAssertTrue(result.isCompatible)
         XCTAssertTrue(result.issues.isEmpty)
+        XCTAssertTrue(result.warnings.contains { $0.contains("ArchiveXL") })
+    }
+    
+    func testInstallPaths() {
+        let game = URL(fileURLWithPath: "/Game")
+        func path(_ rel: String, _ type: ModType) -> String {
+            ModFileManager.installPath(relativePath: rel, fileType: type, gamePath: game).path
+        }
+        XCTAssertEqual(path("Mod/archive/pc/mod/a.archive", .archive), "/Game/archive/pc/mod/a.archive")
+        XCTAssertEqual(path("a.archive", .archive), "/Game/archive/pc/mod/a.archive")
+        XCTAssertEqual(path("a.archive.xl", .archiveXL), "/Game/archive/pc/mod/a.archive.xl")
+        XCTAssertEqual(path("x/r6/tweaks/Foo/t.yaml", .tweakXL), "/Game/r6/tweaks/Foo/t.yaml")
+        XCTAssertEqual(path("t.yaml", .tweakXL), "/Game/r6/tweaks/t.yaml")
+        XCTAssertEqual(path("s.reds", .redscript), "/Game/r6/scripts/s.reds")
+        XCTAssertEqual(path("red4ext\\plugins\\Foo\\Scripts\\s.reds", .redscript), "/Game/red4ext/plugins/Foo/Scripts/s.reds")
+        XCTAssertEqual(path("bin/Foo.dylib", .red4ext), "/Game/red4ext/plugins/Foo/Foo.dylib")
     }
     
     func testIncompatibleDLLMod() async {

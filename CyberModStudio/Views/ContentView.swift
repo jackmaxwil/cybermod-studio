@@ -411,6 +411,10 @@ struct InstallModSheet: View {
             } else {
                 Text("Drop a mod archive here or click Browse")
                     .foregroundColor(.secondary)
+                Text(".archive mods need ArchiveXL installed; the game does not load archive/pc/mod on its own on macOS.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
                 
                 HStack {
                     Button("Cancel") { dismiss() }

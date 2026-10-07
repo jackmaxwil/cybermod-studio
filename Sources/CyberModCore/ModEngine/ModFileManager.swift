@@ -236,13 +236,7 @@ public actor ModFileManager {
         var deployedFiles: [DeployedFile] = []
         
         for file in files where file.fileType != .unknown {
-            let installDir = gamePath.appendingPathComponent(file.fileType.installDirectory)
-            
-            // Determine install path based on mod structure
-            let installPath = determineInstallPath(
-                file: file,
-                installDir: installDir
-            )
+            let installPath = Self.installPath(relativePath: file.relativePath, fileType: file.fileType, gamePath: gamePath)
             
             // Create parent directory
             try fm.createDirectory(
@@ -270,12 +264,24 @@ public actor ModFileManager {
         return deployedFiles
     }
     
-    private func determineInstallPath(file: AnalyzedFile, installDir: URL) -> URL {
-        // If file is already in a proper structure, preserve it
-        // Find the relevant part of the path (after archive/pc/mod, r6/tweaks, etc.)
-        // For now, just use the filename
-        let filename = file.absolutePath.lastPathComponent
-        return installDir.appendingPathComponent(filename)
+    /// Game folders mods install into. A file already under one of them in the mod keeps its path from there
+    /// (e.g. red4ext/plugins/<Name>/Scripts/x.reds); anything else lands in its type's folder by file name.
+    static let installRoots = ["archive/pc/mod/", "r6/tweaks/", "r6/scripts/", "red4ext/plugins/"]
+    
+    static func installPath(relativePath: String, fileType: ModType, gamePath: URL) -> URL {
+        let path = relativePath.replacingOccurrences(of: "\\", with: "/")
+        for root in installRoots {
+            if let range = path.range(of: root, options: .caseInsensitive) {
+                return gamePath.appendingPathComponent(root + path[range.upperBound...])
+            }
+        }
+        let file = (path as NSString).lastPathComponent
+        let installDir = gamePath.appendingPathComponent(fileType.installDirectory)
+        // RED4ext loads plugins only from their own folder: red4ext/plugins/<Name>/<Name>.dylib.
+        if fileType == .red4ext {
+            return installDir.appendingPathComponent((file as NSString).deletingPathExtension).appendingPathComponent(file)
+        }
+        return installDir.appendingPathComponent(file)
     }
     
     private func deployFile(from source: URL, to destination: URL) throws {
